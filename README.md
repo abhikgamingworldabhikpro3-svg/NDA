@@ -107,7 +107,7 @@ The rules ensure:
 
 ## 🤖 Admin Console & Seeding Content
 
-1. Log in to the application using Google Sign-In or register with the administrator email: **`abhikgamingworldabhikpro3@gmail.com`**.
+1. Log in to the application using Google Sign-In or register with the administrator email: **``**.
 2. Tap the **Admin Console** tab on the sidebar.
 3. Click **Seed Sample GK Data** to immediately populate your local Firestore database with high-value, realistic GAT current affairs and matching MCQs (Exercise Malabar, ISRO Gaganyaan TV-D2, Brazil G20 Rio Accord).
 4. Paste any raw press release in the **Ingest with AI** tab to witness Gemini process summaries, quiz options, and static GK links.
