@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from 'vite';
 
@@ -474,7 +475,9 @@ Answer the student's question based strictly on this article and related static 
   });
 
   // Setup Vite dev server middleware or static serve in production
-  if (process.env.NODE_ENV === 'production') {
+  const isProduction = process.env.NODE_ENV === 'production' || fs.existsSync(path.join(__dirname, 'dist/index.html'));
+  
+  if (isProduction && fs.existsSync(path.join(__dirname, 'dist'))) {
     const distPath = path.join(__dirname, 'dist');
     app.use(express.static(distPath));
     app.get('*', (req, res, next) => {
