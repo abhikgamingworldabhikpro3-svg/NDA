@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isEmailVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.email == 'abhikgamingworldabhikpro3@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- USERS COLLECTION ---
+    match /users/{userId} {
+      allow get: if isOwner(userId) || isAdmin();
+      allow list: if isAdmin();
+      
+      allow create: if isOwner(userId) && 
+                      incoming().uid == userId &&
+                      (incoming().role == "student" || (incoming().role == "admin" && request.auth.token.email == 'abhikgamingworldabhikpro3@gmail.com')) &&
+                      incoming().streak == 0 &&
+                      incoming().createdAt is string &&
+                      incoming().name is string &&
+                      incoming().email is string;
+
+      allow update: if isOwner(userId) &&
+                      incoming().uid == userId &&
+                      incoming().role == existing().role &&  // Forbid role changes
+                      incoming().email == existing().email && // Forbid email modifications
+                      incoming().diff(existing()).affectedKeys().hasOnly(['name', 'targetAttempt', 'preferredLanguage', 'dailyTarget', 'streak', 'lastActiveAt', 'onboardingCompleted', 'updatedAt', 'targetExam']);
+
+      allow delete: if isAdmin();
+    }
+
+    // --- CURRENT AFFAIRS COLLECTION ---
+    match /currentAffairs/{articleId} {
+      allow get: if isSignedIn() && (existing().status == "published" || isAdmin());
+      allow list: if isSignedIn() && (existing().status == "published" || isAdmin());
+
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- QUESTIONS COLLECTION ---
+    match /questions/{questionId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // --- REPORTS COLLECTION ---
+    match /reports/{reportId} {
+      allow get: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isSignedIn() && 
+                      incoming().userId == request.auth.uid &&
+                      incoming().userEmail == request.auth.token.email &&
+                      incoming().status == "pending" &&
+                      incoming().createdAt is string;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // --- SOURCES COLLECTION ---
+    match /sources/{sourceId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    // --- AUDIT LOGS ---
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin() && incoming().timestamp is string;
+      allow update, delete: if false; // Audit logs should be immutable
+    }
+
+    // --- SUBCOLLECTIONS OF USERS ---
+
+    // QUIZ ATTEMPTS
+    match /users/{userId}/quizAttempts/{attemptId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && incoming().attemptedAt is string;
+      allow update, delete: if false;
+    }
+
+    // BOOKMARKS
+    match /users/{userId}/bookmarks/{bookmarkId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && incoming().createdAt is string;
+      allow update, delete: if isOwner(userId);
+    }
+
+    // REVISIONS
+    match /users/{userId}/revisions/{revisionId} {
+      allow get, list: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && incoming().createdAt is string;
+      allow update: if isOwner(userId) && incoming().updatedAt is string;
+      allow delete: if isOwner(userId);
+    }
+  }
+}

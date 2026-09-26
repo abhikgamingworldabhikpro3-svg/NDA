@@ -1,0 +1,6 @@
+{
+  "name": "NDA Current Affairs AI",
+  "description": "Read. Revise. Practice. Prepare for GAT and Defence Current Affairs with Spaced Repetition and AI-powered Grounding.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,217 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User account information, goals, and study configurations",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Unique user ID matching auth.uid" },
+        "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["student", "admin"] },
+        "targetExam": { "type": "string" },
+        "targetAttempt": { "type": "string", "enum": ["NDA 1", "NDA 2", "Both"] },
+        "preferredLanguage": { "type": "string", "enum": ["en", "hi", "bn"] },
+        "dailyTarget": { "type": "integer", "enum": [10, 20, 30, 50] },
+        "streak": { "type": "integer" },
+        "lastActiveAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "onboardingCompleted": { "type": "boolean" }
+      },
+      "required": ["uid", "name", "email", "role", "targetAttempt", "preferredLanguage", "dailyTarget", "streak"]
+    },
+    "CurrentAffair": {
+      "title": "Current Affair Article",
+      "description": "Exams-focused current affairs study material parsed from official sources",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string", "minLength": 10, "maxLength": 300 },
+        "summary": { "type": "string", "minLength": 20, "maxLength": 1000 },
+        "detailedExplanation": { "type": "string" },
+        "category": { "type": "string" },
+        "subCategory": { "type": "string" },
+        "publishedAt": { "type": "string", "format": "date-time" },
+        "retrievedAt": { "type": "string", "format": "date-time" },
+        "sourceName": { "type": "string" },
+        "sourceUrl": { "type": "string" },
+        "ndaRelevance": { "type": "string" },
+        "priority": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW"] },
+        "importantFacts": { "type": "array", "description": "Short remember points" },
+        "people": { "type": "array" },
+        "places": { "type": "array" },
+        "organizations": { "type": "array" },
+        "dates": { "type": "array" },
+        "numbers": { "type": "array" },
+        "staticGK": { "type": "string" },
+        "relatedTopics": { "type": "array" },
+        "status": { "type": "string", "enum": ["draft", "review", "published", "rejected", "archived"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "title", "summary", "category", "publishedAt", "sourceName", "ndaRelevance", "priority", "status"]
+    },
+    "Question": {
+      "title": "Multiple Choice Question",
+      "description": "Exam practice MCQ question associated with current affairs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string", "minLength": 10 },
+        "optionA": { "type": "string" },
+        "optionB": { "type": "string" },
+        "optionC": { "type": "string" },
+        "optionD": { "type": "string" },
+        "correctAnswer": { "type": "string", "enum": ["A", "B", "C", "D"] },
+        "explanation": { "type": "string" },
+        "category": { "type": "string" },
+        "difficulty": { "type": "string", "enum": ["easy", "medium", "hard"] },
+        "source": { "type": "string" },
+        "articleId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "question", "optionA", "optionB", "optionC", "optionD", "correctAnswer", "explanation", "category", "difficulty", "source"]
+    },
+    "QuizAttempt": {
+      "title": "Quiz Attempt",
+      "description": "Historical record of student quiz results, performance, and categories",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "quizType": { "type": "string" },
+        "category": { "type": "string" },
+        "score": { "type": "integer" },
+        "totalQuestions": { "type": "integer" },
+        "correctCount": { "type": "integer" },
+        "wrongCount": { "type": "integer" },
+        "unansweredCount": { "type": "integer" },
+        "timeSpentSeconds": { "type": "integer" },
+        "answers": { "type": "object" },
+        "attemptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "quizType", "score", "totalQuestions", "correctCount", "attemptedAt"]
+    },
+    "Bookmark": {
+      "title": "User Bookmark",
+      "description": "Bookmarked articles, questions, or topics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "itemType": { "type": "string", "enum": ["article", "question"] },
+        "itemId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "itemType", "itemId", "createdAt"]
+    },
+    "Revision": {
+      "title": "Revision Card",
+      "description": "Spaced repetition item generated automatically from wrong answers or custom revision flags",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "itemId": { "type": "string" },
+        "itemType": { "type": "string", "enum": ["article", "question"] },
+        "status": { "type": "string", "enum": ["new", "learning", "review", "mastered"] },
+        "reviewCount": { "type": "integer" },
+        "lastReviewedAt": { "type": "string", "format": "date-time" },
+        "nextReviewAt": { "type": "string", "format": "date-time" },
+        "correctCount": { "type": "integer" },
+        "wrongCount": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "itemId", "itemType", "status", "reviewCount", "createdAt", "updatedAt"]
+    },
+    "Report": {
+      "title": "Question Report",
+      "description": "Student bug/fact corrections reported on questions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "questionId": { "type": "string" },
+        "reason": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "resolved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "resolvedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "questionId", "reason", "description", "status", "createdAt"]
+    },
+    "Source": {
+      "title": "Content Source",
+      "description": "Tracked official sources or manually curated ingestion channels",
+      "type": "object",
+      "properties": {
+        "sourceId": { "type": "string" },
+        "name": { "type": "string" },
+        "url": { "type": "string" },
+        "type": { "type": "string" },
+        "enabled": { "type": "boolean" },
+        "trustLevel": { "type": "string", "enum": ["official", "reputable", "user-submitted"] },
+        "lastFetchedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sourceId", "name", "url", "type", "enabled", "trustLevel"]
+    },
+    "AuditLog": {
+      "title": "Admin Audit Log",
+      "description": "Records major admin operations and article ingestion logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "adminUid": { "type": "string" },
+        "action": { "type": "string" },
+        "target": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "metadata": { "type": "object" }
+      },
+      "required": ["id", "adminUid", "action", "target", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Contains user registration details, preferences, and progress statistics."
+    },
+    "/currentAffairs/{articleId}": {
+      "schema": "CurrentAffair",
+      "description": "Stores individual NDA-relevant current affair items fetched from trusted sources."
+    },
+    "/questions/{questionId}": {
+      "schema": "Question",
+      "description": "Stores standard GK and daily quiz practice questions curated for aspirants."
+    },
+    "/users/{userId}/quizAttempts/{attemptId}": {
+      "schema": "QuizAttempt",
+      "description": "Maintains sub-collection history of students' quiz completions."
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": "Bookmark",
+      "description": "Saves student's marked current affairs and questions."
+    },
+    "/users/{userId}/revisions/{revisionId}": {
+      "schema": "Revision",
+      "description": "Contains student spaced-repetition progress cards."
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Holds questions flagged by students with errors, resolved by admin."
+    },
+    "/sources/{sourceId}": {
+      "schema": "Source",
+      "description": "Defines active RSS/ministry links configured for auto ingestion or manual entry."
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Secure logs of actions taken by administrators."
+    }
+  }
+}
