@@ -101,7 +101,7 @@ firebase deploy --only firestore:rules
 ```
 The rules ensure:
 - Only authorized users can modify their own bookmarks, quiz attempts, and spaced revision items.
-- Only the bootstrapped administrator email `abhikgamingworldabhikpro3@gmail.com` can perform writes on articles, question lists, configurations, and inspect audit logs.
+- Only the bootstrapped administrator email ` can perform writes on articles, question lists, configurations, and inspect audit logs.
 
 ---
 
