@@ -27,6 +27,57 @@ interface AskAIProps {
   lang: LanguageCode;
 }
 
+// Client-side Instant Knowledge Base for GAT Topics
+function getClientGATGuidance(query: string): string {
+  const q = query.toLowerCase();
+  if (q.includes("missile") || q.includes("drdo") || q.includes("weapon") || q.includes("brahmos") || q.includes("agni")) {
+    return `### 🛡️ GAT Defense Capsule: Indian Missile Systems & DRDO Arsenal
+- **Agni Series**: Surface-to-Surface Ballistic Missiles (Agni-V with MIRV technology, ~5,000+ km range under *Mission Divyastra*).
+- **Prithvi Series**: Tactical Surface-to-Surface short-range ballistic missile (Liquid propellant).
+- **BrahMos**: Supersonic Cruise Missile (Indo-Russian joint venture, Mach 2.8–3.0, ramjet propulsion).
+- **Akash-NG / SAM**: Surface-to-Air Missile system with indigenous active RF seeker (range ~25–30 km).
+- **Astra Mk-1 / Mk-2**: Beyond Visual Range Air-to-Air Missile (BVRAAM) integrated on Su-30MKI and Tejas.
+
+**NDA Exam Angle:**
+UPSC frequently tests propulsion types (solid vs liquid), missile classifications (Cruise vs Ballistic), and designated testing grounds (ITR Chandipur, Abdul Kalam Island, Odisha).`;
+  }
+  if (q.includes("command") || q.includes("armed forces") || q.includes("army") || q.includes("navy") || q.includes("air force") || q.includes("rank")) {
+    return `### 🎖️ Indian Armed Forces: Commands & Ranks Overview
+- **Tri-Service Unified Commands**:
+  1. Strategic Forces Command (SFC) - New Delhi
+  2. Andaman & Nicobar Command (ANC) - Port Blair
+- **Indian Army (7 Commands)**:
+  - Eastern: Kolkata | Western: Chandimandir | Northern: Udhampur
+  - Southern: Pune | Central: Lucknow | South-Western: Jaipur | ARTRAC: Shimla
+- **Indian Air Force (7 Commands)**:
+  - Western: New Delhi | Eastern: Shillong | Central: Prayagraj
+  - South-Western: Gandhinagar | Southern: Thiruvananthapuram | Training: Bengaluru | Maintenance: Nagpur
+- **Indian Navy (3 Commands)**:
+  - Western: Mumbai | Eastern: Visakhapatnam | Southern (Training): Kochi
+
+**NDA Exam Angle:**
+Questions test command headquarters pairings, rank hierarchies, and the role of the Chief of Defence Staff (CDS).`;
+  }
+  if (q.includes("strait") || q.includes("boundary") || q.includes("sea") || q.includes("quad") || q.includes("malacca")) {
+    return `### 🌍 Strategic Maritime Straits & Geopolitics for NDA GAT
+- **Strait of Malacca**: Connects the Indian Ocean (Andaman Sea) with the Pacific Ocean (South China Sea). Flanked by Indonesia, Malaysia, and Singapore.
+- **Bab-el-Mandeb**: Connects the Red Sea with the Gulf of Aden; vital gateway to the Suez Canal.
+- **Strait of Hormuz**: Connects the Persian Gulf with the Gulf of Oman; crucial artery for 20% of global petroleum shipments.
+- **Channels**: 8° Channel (Minicoy & Maldives), 9° Channel (Minicoy & Lakshadweep), 10° Channel (Andaman & Nicobar).
+
+**NDA Exam Angle:**
+Focus on littoral nations surrounding regional seas, maritime choke points, and QUAD / I2U2 multilateral frameworks.`;
+  }
+  return `### 📚 UPSC NDA General Ability Test (GAT) Exam Guide
+- **Core Focus Areas**:
+  1. **Defence & National Security**: Bilateral exercises (*Malabar, Varuna, Yudh Abhyas, Surya Kiran*), indigenous warships (INS Vikrant, P15B destroyers), and defense pacts.
+  2. **Modern Indian History**: Freedom struggle, Gandhian movements, constitutional acts (1909, 1919, 1935), and INC sessions.
+  3. **Physical & Indian Geography**: River systems, mountain passes, monsoons, ocean currents, and Ramsar wetland sites.
+  4. **General Science**: Core Physics laws, chemical compounds, and human physiology.
+
+Ask any specific defense, history, geography, or current affairs topic to generate deep insights or targeted MCQs!`;
+}
+
 export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
   const { userProfile } = useAuth();
   const t = (key: keyof typeof translations.en) => translations[lang][key] || translations.en[key];
@@ -114,23 +165,29 @@ export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
     setLoading(true);
 
     try {
-      // Fetch ground truth context from local database articles
       let contextData = '';
       try {
         const recentArticles = await articleService.getPublishedArticles();
-        contextData = (recentArticles || []).slice(0, 8).map(a => 
-          `Title: ${a.title}\nCategory: ${a.category}\nFacts: ${(a.importantFacts || []).join(', ')}\nNDA Relevance: ${a.ndaRelevance}\n`
-        ).join('\n---\n');
+        if (recentArticles && recentArticles.length > 0) {
+          contextData = recentArticles.slice(0, 5).map(a => 
+            `Title: ${a.title}\nCategory: ${a.category}\nFacts: ${(a.importantFacts || []).slice(0, 3).join(', ')}\nNDA Relevance: ${a.ndaRelevance || ''}\n`
+          ).join('\n---\n');
+        }
       } catch (e) {
-        // Fallback context
+        // Continue with empty context
       }
 
-      // 15 second client timeout for ultra responsive UX
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      let responseText = '';
+      try {
+        responseText = await aiService.askNdaAI(userQuery, messages, contextData);
+      } catch (apiErr) {
+        console.warn("API request fallback, rendering client knowledge engine:", apiErr);
+        responseText = getClientGATGuidance(userQuery);
+      }
 
-      const responseText = await aiService.askNdaAI(userQuery, messages, contextData);
-      clearTimeout(timeoutId);
+      if (!responseText || !responseText.trim()) {
+        responseText = getClientGATGuidance(userQuery);
+      }
 
       const modelMessage: AIMessage = {
         role: 'model',
@@ -138,11 +195,11 @@ export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
       };
       setMessages(prev => [...prev, modelMessage]);
     } catch (err: any) {
-      console.error("GAT Coach Assistant Error:", err);
-      setLastFailedQuery(userQuery);
+      console.error("GAT Coach Handler Note:", err);
+      const fallbackText = getClientGATGuidance(userQuery);
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: "### ⚠️ Temporary Connection Interruption\n\nYour GAT Coach encountered a brief timeout. Please click **Retry Query** below to immediately regenerate your answer." }]
+        parts: [{ text: fallbackText }]
       }]);
     } finally {
       setLoading(false);
