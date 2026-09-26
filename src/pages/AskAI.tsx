@@ -13,7 +13,12 @@ import {
   Clock,
   Sparkles,
   ChevronRight,
-  Shield
+  Shield,
+  Copy,
+  Check,
+  Volume2,
+  VolumeX,
+  RotateCcw
 } from 'lucide-react';
 import { translations, LanguageCode } from '../i18n/translations';
 
@@ -29,33 +34,36 @@ export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
   const [query, setQuery] = useState('');
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
+  const [lastFailedQuery, setLastFailedQuery] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   // Suggested Prompts based on UPSC GAT syllabus
   const prompts = [
     {
       title: "Today's Key Affairs",
-      prompt: "What are today's most important current affairs developments for NDA?",
+      prompt: "What are today's most critical defense & national security developments for UPSC NDA GAT?",
       icon: Compass,
-      color: "bg-blue-50 text-blue-500 hover:border-blue-300 dark:bg-blue-950/20"
+      color: "bg-blue-50 text-blue-600 hover:border-blue-300 dark:bg-blue-950/20 dark:text-blue-400"
     },
     {
-      title: "Geopolitical Hotspot",
-      prompt: "Explain a current international boundary or geopolitical dispute (like South China Sea or Red Sea) for NDA preparation.",
+      title: "Geopolitical Disputes",
+      prompt: "Explain the strategic importance of the Malacca Strait, Bab-el-Mandeb, and South China Sea for Indian maritime security.",
       icon: MessageSquare,
-      color: "bg-emerald-50 text-emerald-500 hover:border-emerald-300 dark:bg-emerald-950/20"
+      color: "bg-emerald-50 text-emerald-600 hover:border-emerald-300 dark:bg-emerald-950/20 dark:text-emerald-400"
     },
     {
-      title: "Military Commands",
-      prompt: "Give me a quick review cheatsheet on Indian Armed Forces Commands, locations, and flagship weapon systems.",
+      title: "Armed Forces Commands",
+      prompt: "Give me a quick review cheatsheet on Indian Armed Forces Commands, locations, and flagship missile systems (Agni, BrahMos, Astra).",
       icon: Shield,
-      color: "bg-amber-50 text-amber-500 hover:border-amber-300 dark:bg-amber-950/20"
+      color: "bg-amber-50 text-amber-600 hover:border-amber-300 dark:bg-amber-950/20 dark:text-amber-400"
     },
     {
-      title: "Space & Science Facts",
-      prompt: "Test me with 5 difficult science & space MCQs based on recent global scientific missions.",
+      title: "Targeted Mock MCQs",
+      prompt: "Generate 5 high-yield UPSC NDA practice questions on recent science, space, and defense events with detailed explanations.",
       icon: HelpCircle,
-      color: "bg-purple-50 text-purple-500 hover:border-purple-300 dark:bg-purple-950/20"
+      color: "bg-purple-50 text-purple-600 hover:border-purple-300 dark:bg-purple-950/20 dark:text-purple-400"
     }
   ];
 
@@ -65,37 +73,76 @@ export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
     }
   }, [messages, loading]);
 
+  const handleCopyText = (text: string, idx: number) => {
+    navigator.clipboard.writeText(text);
+    setCopiedIdx(idx);
+    setTimeout(() => setCopiedIdx(null), 2000);
+  };
+
+  const handleSpeakText = (text: string, idx: number) => {
+    if ('speechSynthesis' in window) {
+      if (speakingIdx === idx) {
+        window.speechSynthesis.cancel();
+        setSpeakingIdx(null);
+        return;
+      }
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text.replace(/[*#_`]/g, ''));
+      utterance.rate = 1.0;
+      utterance.pitch = 1.0;
+      utterance.onend = () => setSpeakingIdx(null);
+      utterance.onerror = () => setSpeakingIdx(null);
+      setSpeakingIdx(idx);
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
   const handleSendPrompt = async (textToSend: string) => {
     if (!textToSend.trim()) return;
     
-    const userQuery = textToSend;
+    const userQuery = textToSend.trim();
     setQuery('');
+    setLastFailedQuery(null);
 
     // Prepend user message
     const userMessage: AIMessage = {
       role: 'user',
       parts: [{ text: userQuery }]
     };
-    setMessages(prev => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     setLoading(true);
 
     try {
-      // Load current articles into context for grounding if available, preventing hallucinated fabrications
-      const recentArticles = await articleService.getPublishedArticles();
-      const contextData = recentArticles.slice(0, 10).map(a => `Title: ${a.title}\nCategory: ${a.category}\nFacts: ${a.importantFacts?.join(', ')}\nNDA Relevance: ${a.ndaRelevance}\n`).join('\n---\n');
+      // Fetch ground truth context from local database articles
+      let contextData = '';
+      try {
+        const recentArticles = await articleService.getPublishedArticles();
+        contextData = (recentArticles || []).slice(0, 8).map(a => 
+          `Title: ${a.title}\nCategory: ${a.category}\nFacts: ${(a.importantFacts || []).join(', ')}\nNDA Relevance: ${a.ndaRelevance}\n`
+        ).join('\n---\n');
+      } catch (e) {
+        // Fallback context
+      }
+
+      // 15 second client timeout for ultra responsive UX
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       const responseText = await aiService.askNdaAI(userQuery, messages, contextData);
-      
+      clearTimeout(timeoutId);
+
       const modelMessage: AIMessage = {
         role: 'model',
         parts: [{ text: responseText }]
       };
       setMessages(prev => [...prev, modelMessage]);
     } catch (err: any) {
-      console.error(err);
+      console.error("GAT Coach Assistant Error:", err);
+      setLastFailedQuery(userQuery);
       setMessages(prev => [...prev, {
         role: 'model',
-        parts: [{ text: "GAT Coach is currently offline due to a connection timeout. Please retry in a few seconds." }]
+        parts: [{ text: "### ⚠️ Temporary Connection Interruption\n\nYour GAT Coach encountered a brief timeout. Please click **Retry Query** below to immediately regenerate your answer." }]
       }]);
     } finally {
       setLoading(false);
@@ -103,65 +150,80 @@ export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
   };
 
   const handleResetChat = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    setSpeakingIdx(null);
     setMessages([]);
     setQuery('');
+    setLastFailedQuery(null);
   };
 
   return (
-    <div className="flex-1 p-6 lg:p-8 space-y-6 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen pb-24 flex flex-col justify-between">
+    <div className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen pb-24 flex flex-col justify-between">
       
-      {/* Title */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
-            {t('askAI')}
-          </h2>
-          <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
-            Your Personal GAT General Knowledge & Current Affairs Coach
-          </p>
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
+            <Brain className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white leading-tight">
+                {t('askAI')}
+              </h2>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Active
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 font-semibold uppercase tracking-wider mt-0.5">
+              Your UPSC NDA General Ability Test (GAT) Mentor
+            </p>
+          </div>
         </div>
 
         {messages.length > 0 && (
           <button 
             onClick={handleResetChat}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 px-3.5 py-1.5 text-xs font-bold transition shadow-xs"
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-900 px-3.5 py-1.5 text-xs font-bold transition shadow-xs cursor-pointer"
           >
-            <RefreshCw className="h-3.5 w-3.5" /> Clear History
+            <RefreshCw className="h-3.5 w-3.5" /> Clear Chat
           </button>
         )}
       </div>
 
-      {/* Main Conversation Window */}
-      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col h-[520px]">
+      {/* Main Chat Frame */}
+      <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden flex flex-col min-h-[500px] h-[600px]">
         
-        {/* Chat Feed */}
-        <div className="flex-grow overflow-y-auto p-5 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
+        {/* Chat Messages Feed */}
+        <div className="flex-grow overflow-y-auto p-4 sm:p-6 space-y-4 scrollbar-thin scrollbar-thumb-slate-200 dark:scrollbar-thumb-slate-800">
           {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-6 max-w-lg mx-auto py-10">
-              <div className="h-14 w-12 items-center justify-center bg-indigo-50 dark:bg-indigo-950/20 text-indigo-500 rounded-2xl flex relative animate-bounce">
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-5 max-w-xl mx-auto py-8">
+              <div className="h-14 w-14 items-center justify-center bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 rounded-2xl flex relative shadow-inner">
                 <Brain className="h-7 w-7" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-sm font-extrabold text-slate-900 dark:text-white">Begin Interrogating Your GAT Coach</h3>
-                <p className="text-xs text-slate-400 leading-relaxed font-semibold">
-                  Ask definitions of military treaties, weapon scopes, geographic locations, indices rankings, or ask for targeted practice quizzes.
+              <div className="space-y-1.5">
+                <h3 className="text-base font-extrabold text-slate-900 dark:text-white">Ask Anything to Your GAT Coach</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                  Interrogate missile specifications, international boundaries, military commands, constitutional articles, or request instant targeted mock quizzes.
                 </p>
               </div>
 
               {/* Prompt Suggestion Chips */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full pt-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full pt-2">
                 {prompts.map((p) => {
                   const PromptIcon = p.icon;
                   return (
                     <button
                       key={p.title}
                       onClick={() => handleSendPrompt(p.prompt)}
-                      className={`text-left p-4 rounded-xl border border-slate-100 dark:border-slate-850/80 transition flex gap-3 cursor-pointer bg-slate-50 dark:bg-slate-950/50 ${p.color}`}
+                      className={`text-left p-3.5 rounded-xl border border-slate-200 dark:border-slate-800/80 transition-all hover:scale-[1.01] flex gap-3 cursor-pointer ${p.color}`}
                     >
                       <PromptIcon className="h-5 w-5 shrink-0 mt-0.5" />
                       <div>
-                        <h4 className="text-xs font-black block">{p.title}</h4>
-                        <p className="text-[10px] text-slate-400 font-semibold line-clamp-2 mt-0.5 leading-relaxed">{p.prompt}</p>
+                        <h4 className="text-xs font-bold block">{p.title}</h4>
+                        <p className="text-[11px] opacity-80 line-clamp-2 mt-0.5 leading-snug">{p.prompt}</p>
                       </div>
                     </button>
                   );
@@ -175,48 +237,86 @@ export const AskAI: React.FC<AskAIProps> = ({ setPath, lang }) => {
                   key={idx}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className={`p-4.5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed max-w-[85%] whitespace-pre-wrap ${
+                  <div className={`p-4 sm:p-5 rounded-2xl text-xs sm:text-sm font-medium leading-relaxed max-w-[90%] sm:max-w-[82%] ${
                     msg.role === 'user'
                       ? 'bg-indigo-600 text-white rounded-br-none shadow-sm'
-                      : 'bg-slate-50 text-slate-800 dark:bg-slate-950 border border-slate-150 dark:border-slate-900 rounded-bl-none prose dark:prose-invert font-normal text-slate-600 dark:text-slate-300'
+                      : 'bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-200 border border-slate-200 dark:border-slate-850 rounded-bl-none shadow-xs'
                   }`}>
-                    {msg.parts[0].text}
+                    <div className="whitespace-pre-wrap font-sans leading-relaxed">
+                      {msg.parts[0].text}
+                    </div>
+
+                    {msg.role === 'model' && (
+                      <div className="mt-3 pt-2.5 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
+                        <span className="font-bold tracking-wide uppercase text-[10px] text-indigo-500">NDA GAT Coach</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleSpeakText(msg.parts[0].text, idx)}
+                            className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition flex items-center gap-1 cursor-pointer"
+                            title="Read Aloud"
+                          >
+                            {speakingIdx === idx ? <VolumeX className="h-3.5 w-3.5 text-indigo-500 animate-pulse" /> : <Volume2 className="h-3.5 w-3.5" />}
+                            <span>{speakingIdx === idx ? 'Stop' : 'Listen'}</span>
+                          </button>
+                          <button
+                            onClick={() => handleCopyText(msg.parts[0].text, idx)}
+                            className="p-1 hover:text-indigo-600 dark:hover:text-indigo-400 rounded transition flex items-center gap-1 cursor-pointer"
+                            title="Copy Answer"
+                          >
+                            {copiedIdx === idx ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+                            <span>{copiedIdx === idx ? 'Copied' : 'Copy'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
+
+              {lastFailedQuery && (
+                <div className="flex justify-center pt-2">
+                  <button
+                    onClick={() => handleSendPrompt(lastFailedQuery)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-md transition cursor-pointer"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" /> Retry Query: "{lastFailedQuery.substring(0, 30)}..."
+                  </button>
+                </div>
+              )}
+
               <div ref={scrollRef} />
             </div>
           )}
 
           {loading && (
             <div className="flex justify-start">
-              <div className="p-4.5 rounded-2xl bg-slate-50 border border-slate-150 text-slate-400 dark:bg-slate-950 dark:border-slate-900 font-bold rounded-bl-none text-xs flex items-center gap-2 animate-pulse">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-slate-600 dark:bg-slate-950 dark:border-slate-800 dark:text-slate-300 font-bold rounded-bl-none text-xs flex items-center gap-2.5 animate-pulse">
                 <Sparkles className="h-4 w-4 text-indigo-500 animate-spin" />
-                <span>NDA AI is analyzing database, formulating static GK connection...</span>
+                <span>NDA AI is searching syllabus database, generating GAT exam connection...</span>
               </div>
             </div>
           )}
         </div>
 
-        {/* Query Input form footer */}
+        {/* Input Bar */}
         <form 
           onSubmit={(e) => { e.preventDefault(); handleSendPrompt(query); }}
-          className="border-t border-slate-150 dark:border-slate-850 p-4 bg-slate-50/50 dark:bg-slate-900/60 flex gap-3"
+          className="border-t border-slate-200 dark:border-slate-800 p-3 sm:p-4 bg-slate-50/80 dark:bg-slate-900/90 flex gap-2.5 items-center"
         >
           <input 
             type="text" 
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask NDA AI: e.g. What are DRDO's recent missile advancements?"
-            className="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 text-xs sm:text-sm font-medium outline-none focus:border-indigo-600 transition"
+            placeholder="Ask GAT Coach: e.g., Explain Indian Naval aircraft carriers and recent operations..."
+            className="flex-1 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 transition text-slate-800 dark:text-slate-100"
             disabled={loading}
           />
           <button 
             type="submit"
             disabled={loading || !query.trim()}
-            className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-800"
+            className="p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-800 cursor-pointer disabled:cursor-not-allowed shrink-0"
           >
-            <Send className="h-4.5 w-4.5" />
+            <Send className="h-4 w-4" />
           </button>
         </form>
       </div>
