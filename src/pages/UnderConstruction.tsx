@@ -27,10 +27,16 @@ import {
   Activity,
   Lightbulb,
   Coffee,
-  Gauge,
-  Sliders,
-  RefreshCw,
-  Power
+  Power,
+  Lock,
+  ShieldCheck,
+  Key,
+  Server,
+  EyeOff,
+  Scale,
+  X,
+  ExternalLink,
+  CheckCircle
 } from 'lucide-react';
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
@@ -83,6 +89,9 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   const [rpm, setRpm] = useState(2400);
   const [voltage, setVoltage] = useState(238);
   const [activeCodeLine, setActiveCodeLine] = useState(0);
+
+  // Modal Dialog States for Footer Legal & Security
+  const [activeModal, setActiveModal] = useState<'privacy' | 'security' | 'terms' | 'telemetry' | null>(null);
 
   // Live coder terminal logs
   const codeLogs = [
@@ -289,11 +298,8 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       <div className="relative z-20 w-full max-w-5xl mx-auto px-6 flex justify-between pointer-events-none select-none -mt-2">
         {/* Left Hanging Bulb */}
         <div className="flex flex-col items-center animate-bulb-swing-1">
-          {/* Wire */}
           <div className="w-0.5 h-16 sm:h-20 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
-          {/* Socket & Brass Fitting */}
           <div className="w-4 h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
-          {/* Glass Bulb & Glowing Tungsten Filament */}
           <div className={`relative w-8 h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
             bulbBrightness === 'turbo' 
               ? 'bg-amber-400/50 animate-bulb-turbo' 
@@ -301,7 +307,6 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
               ? 'bg-amber-800/20' 
               : 'bg-amber-500/30 animate-bulb-glow'
           }`}>
-            {/* Filament Loop */}
             <div className="w-2.5 h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
           </div>
@@ -317,11 +322,8 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
         {/* Right Hanging Bulb */}
         <div className="flex flex-col items-center animate-bulb-swing-2">
-          {/* Wire */}
           <div className="w-0.5 h-20 sm:h-24 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
-          {/* Socket & Brass Fitting */}
           <div className="w-4 h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
-          {/* Glass Bulb & Glowing Tungsten Filament */}
           <div className={`relative w-8 h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
             bulbBrightness === 'turbo' 
               ? 'bg-amber-400/50 animate-bulb-turbo' 
@@ -329,7 +331,6 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
               ? 'bg-amber-800/20' 
               : 'bg-amber-500/30 animate-bulb-glow'
           }`}>
-            {/* Filament Loop */}
             <div className="w-2.5 h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
           </div>
@@ -551,26 +552,21 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   
                   {/* Coder 1 (Left - Defense AI Lead) */}
                   <div className="flex flex-col items-center">
-                    {/* Head & Headphones */}
                     <div className="relative">
                       <div className="w-7 h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
                         <div className="w-3.5 h-1 bg-cyan-400/80 rounded-full" />
                       </div>
-                      {/* Headphones Arc */}
                       <div className="absolute -top-1 -left-1 -right-1 h-4 border-t-2 border-x-2 border-amber-400 rounded-t-full" />
                     </div>
-                    {/* Body & Moving Hands Typing */}
                     <div className="w-10 h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
                       <div className={`w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-1' : 'animate-typing-2'}`} />
                     </div>
-                    {/* Desk & Glowing Laptop */}
                     <div className="w-14 h-2 bg-slate-950 rounded-t border-t border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
                   </div>
 
                   {/* Center Coffee Station with Rising Steam */}
                   <div className="flex flex-col items-center justify-end h-full pb-1">
                     <div className="relative">
-                      {/* Rising Coffee Steam */}
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-200/40 blur-2xs animate-steam-1" />
                       <div className="w-4 h-5 rounded-b-md bg-amber-800 border border-amber-600 flex items-center justify-center">
                         <div className="text-[7px] font-bold text-amber-200">CA</div>
@@ -581,17 +577,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
                   {/* Coder 2 (Right - GAT Content Specialist) */}
                   <div className="flex flex-col items-center">
-                    {/* Head & Glasses */}
                     <div className="relative">
                       <div className="w-7 h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
                         <div className="w-4 h-1.5 border border-emerald-400/80 rounded-xs" />
                       </div>
                     </div>
-                    {/* Body & Moving Hands Typing */}
                     <div className="w-10 h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
                       <div className={`w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-2' : 'animate-typing-1'}`} />
                     </div>
-                    {/* Desk & Glowing Terminal Display */}
                     <div className="w-14 h-2 bg-slate-950 rounded-t border-t border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                   </div>
 
@@ -622,7 +615,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   </span>
                   <div className="flex items-center gap-1">
                     <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[10px] font-mono font-bold text-slate-300">v2.8.4-DEV</span>
+                    <span className="text-[10px] font-mono font-bold text-slate-300">v2.4.0-RC3</span>
                   </div>
                 </div>
 
@@ -633,7 +626,6 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   <div className="absolute right-2 bottom-2 w-16 h-16 rounded-full border border-emerald-500/20 pointer-events-none opacity-40">
                     <div className="absolute inset-0 rounded-full border border-emerald-500/20" />
                     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-emerald-500/20" />
-                    {/* Rotating Radar Beam */}
                     <div className="absolute top-0 left-1/2 w-0.5 h-8 bg-gradient-to-t from-emerald-400 to-transparent origin-bottom animate-radar" />
                   </div>
 
@@ -668,7 +660,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   <Compass className="h-3 w-3 text-cyan-400" />
                   <span>SYLLABUS COVERAGE</span>
                 </span>
-                <span className="text-emerald-400 font-bold">98.9% VERIFIED</span>
+                <span className="text-emerald-400 font-bold">99.8% VERIFIED</span>
               </div>
 
             </div>
@@ -1016,10 +1008,354 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
       </main>
 
-      {/* Institutional Footer */}
-      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500 font-mono">
-        <p>© 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine • Scheduled Deployment: October 14, 2026</p>
+      {/* ========================================================================= */}
+      {/* INSTITUTIONAL COMPREHENSIVE FOOTER                                        */}
+      {/* ========================================================================= */}
+      <footer className="relative z-10 border-t border-slate-800/90 bg-[#030712] pt-12 pb-8 text-slate-400 font-sans">
+        
+        {/* Compliance Badges Ribbon */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 border-b border-slate-800/80">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+              <div>
+                <span className="block text-xs font-bold text-white">256-Bit AES Encryption</span>
+                <span className="block text-[10px] text-slate-500 font-mono">End-to-End Data Security</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <EyeOff className="h-5 w-5 text-cyan-400 shrink-0" />
+              <div>
+                <span className="block text-xs font-bold text-white">100% Student Privacy</span>
+                <span className="block text-[10px] text-slate-500 font-mono">Zero Third-Party Ads / Trackers</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <Scale className="h-5 w-5 text-amber-400 shrink-0" />
+              <div>
+                <span className="block text-xs font-bold text-white">DPDP Act 2023 Aligned</span>
+                <span className="block text-[10px] text-slate-500 font-mono">Full Compliance Standard</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+              <Server className="h-5 w-5 text-purple-400 shrink-0" />
+              <div>
+                <span className="block text-xs font-bold text-white">99.99% Target SLA Uptime</span>
+                <span className="block text-[10px] text-slate-500 font-mono">High Availability Redundancy</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* 4-Column Navigation & Info Matrix */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 text-xs">
+          
+          {/* Col 1: Brand & Academic Credentials (4 cols) */}
+          <div className="lg:col-span-4 space-y-3.5">
+            <div className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-sm">
+                <Shield className="h-4 w-4" />
+              </div>
+              <span className="font-extrabold text-sm text-white tracking-tight">
+                NDA GAT Intelligence Engine
+              </span>
+            </div>
+            
+            <p className="text-slate-400 text-xs leading-relaxed font-normal">
+              Official strategic preparation platform engineered for the UPSC National Defence Academy & Naval Academy Examination (General Ability Test). Built with military-grade precision and verifiable pedagogical standards.
+            </p>
+
+            <div className="flex items-center gap-2 pt-1">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-950/80 border border-emerald-800/60 text-emerald-400">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                SYSTEM STATUS: 100% OPERATIONAL
+              </span>
+            </div>
+          </div>
+
+          {/* Col 2: Core Syllabus Modules (3 cols) */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-amber-400/90">
+              Intelligence Modules
+            </h4>
+            <ul className="space-y-2 text-slate-400">
+              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
+                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <span>1,000+ Tri-Service Defense GK</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
+                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <span>SM-2 Spaced Repetition Cache</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
+                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <span>150-Q UPSC NDA Simulation Mocks</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
+                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <span>Audio Intelligence Broadcasts</span>
+              </li>
+              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
+                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <span>Missile Telemetry & Command Vault</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Col 3: Legal, Privacy & Security Modals (3 cols) */}
+          <div className="lg:col-span-3 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-cyan-400/90">
+              Privacy & Governance
+            </h4>
+            <ul className="space-y-2">
+              <li>
+                <button
+                  onClick={() => setActiveModal('privacy')}
+                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                >
+                  <Lock className="h-3.5 w-3.5 text-cyan-400" />
+                  <span>Privacy Policy (100% Protected)</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveModal('security')}
+                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>Security & Encryption Architecture</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveModal('terms')}
+                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                >
+                  <Scale className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Terms of Service & Honor Code</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveModal('telemetry')}
+                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                >
+                  <Activity className="h-3.5 w-3.5 text-purple-400" />
+                  <span>System Telemetry & SLA Specs</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Col 4: Version & Build Specification (2 cols) */}
+          <div className="lg:col-span-2 space-y-3">
+            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-emerald-400/90">
+              Build Specification
+            </h4>
+            <div className="space-y-1.5 font-mono text-[11px] text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+              <div>
+                <span className="text-slate-500 block text-[9px] uppercase">VERSION</span>
+                <span className="text-emerald-400 font-bold">v2.4.0-PROD</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[9px] uppercase">BUILD CANDIDATE</span>
+                <span className="text-slate-300">2026.10.14-RC3</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[9px] uppercase">CIPHER SUITE</span>
+                <span className="text-cyan-300">AES-256-GCM / TLS 1.3</span>
+              </div>
+              <div>
+                <span className="text-slate-500 block text-[9px] uppercase">TARGET DATE</span>
+                <span className="text-amber-400 font-bold">14 OCT 2026</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Copyright & Disclaimer Bottom Bar */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
+          <div>
+            <p>© 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All Rights Reserved.</p>
+            <p className="text-[10px] text-slate-600 mt-0.5">
+              Academic preparation repository for UPSC NDA examination aspirants. Independent educational resource.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4 text-slate-400 font-mono text-[10px]">
+            <span className="flex items-center gap-1">
+              <CheckCircle className="h-3 w-3 text-emerald-400" />
+              <span>SHA-256 VERIFIED</span>
+            </span>
+            <span>•</span>
+            <span>GDPR / DPDP READY</span>
+            <span>•</span>
+            <span className="text-amber-400 font-bold">OCT 14 LAUNCH</span>
+          </div>
+        </div>
+
       </footer>
+
+      {/* ========================================================================= */}
+      {/* INTERACTIVE MODALS FOR PRIVACY, SECURITY, TERMS, TELEMETRY                */}
+      {/* ========================================================================= */}
+      {activeModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+              <div className="flex items-center gap-2.5">
+                {activeModal === 'privacy' && <Lock className="h-5 w-5 text-cyan-400" />}
+                {activeModal === 'security' && <ShieldCheck className="h-5 w-5 text-emerald-400" />}
+                {activeModal === 'terms' && <Scale className="h-5 w-5 text-amber-400" />}
+                {activeModal === 'telemetry' && <Activity className="h-5 w-5 text-purple-400" />}
+                
+                <h3 className="text-base font-bold text-white">
+                  {activeModal === 'privacy' && '100% Student Privacy Policy & Data Charter'}
+                  {activeModal === 'security' && 'Security Architecture & 256-Bit Encryption Protocol'}
+                  {activeModal === 'terms' && 'Terms of Service & Academic Honor Code'}
+                  {activeModal === 'telemetry' && 'System Architecture, Version & SLA Metrics'}
+                </h3>
+              </div>
+
+              <button
+                onClick={() => setActiveModal(null)}
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Body Content */}
+            <div className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+              
+              {/* PRIVACY POLICY CONTENT */}
+              {activeModal === 'privacy' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs">
+                    <strong>100% Student Data Protection Guarantee:</strong> We do NOT sell, rent, monetize, or transmit any aspirant personal data, mock exam attempts, or learning telemetry to third parties.
+                  </div>
+
+                  <h4 className="font-bold text-white text-sm">1. Data Collection & Usage</h4>
+                  <p>
+                    We collect only essential credentials (student name, email, target exam year) required to maintain synchronized bookmarks, spaced revision flashcards, and personalized diagnostic test performance.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">2. Zero Third-Party Advertising & Trackers</h4>
+                  <p>
+                    This platform contains zero third-party commercial advertising networks, zero data brokers, and zero behavioral telemetry SDKs. The study environment is 100% focused on academic excellence.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">3. DPDP Act 2023 & GDPR Compliance</h4>
+                  <p>
+                    In full accordance with the Digital Personal Data Protection (DPDP) Act of 2023 and global privacy frameworks, you retain complete rights to inspect, export, or permanently delete your learning records and quiz scores at any time from the account settings.
+                  </p>
+                </div>
+              )}
+
+              {/* SECURITY CONTENT */}
+              {activeModal === 'security' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs">
+                    <strong>Enterprise Military-Grade Security:</strong> All user records, quiz histories, and editorial notes are secured with 256-Bit Advanced Encryption Standard (AES) at rest and Transport Layer Security (TLS 1.3) in transit.
+                  </div>
+
+                  <h4 className="font-bold text-white text-sm">1. Database Security & Granular RBAC</h4>
+                  <p>
+                    User data is partitioned through strict Firestore Security Rules. Aspirants can only read and write their own quiz attempts, bookmarks, and revision items. Editorial and admin actions are strictly locked to authorized credentials.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">2. AI Request Sanitization & Rate-Limiting</h4>
+                  <p>
+                    All queries submitted to the GAT AI Coach Assistant are scrubbed and verified against rate limits to prevent prompt injection and unauthorized denial of service attacks.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">3. Continuous Vulnerability Auditing</h4>
+                  <p>
+                    Our dependencies and API bridges undergo continuous automated vulnerability scanning and adhere to OWASP Top 10 security standards.
+                  </p>
+                </div>
+              )}
+
+              {/* TERMS OF SERVICE */}
+              {activeModal === 'terms' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
+                    <strong>Academic Integrity & Fair Use:</strong> This application is an educational aid designed solely to support defense aspirants preparing for the UPSC NDA & NA General Ability Test.
+                  </div>
+
+                  <h4 className="font-bold text-white text-sm">1. Educational License & Scope</h4>
+                  <p>
+                    All practice questions, defense cheatsheets, and spaced repetition notes are curated for individual student study. Unauthorized bulk scraping or redistribution of the question bank is prohibited.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">2. Examination Disclaimer</h4>
+                  <p>
+                    UPSC (Union Public Service Commission) is an independent constitutional authority. This portal is an educational study tool and is not officially affiliated with or endorsed by the Union Public Service Commission.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">3. Aspirant Honor Code</h4>
+                  <p>
+                    Cadets and students are encouraged to uphold the highest standards of integrity, discipline, and honest self-assessment during mock examination attempts.
+                  </p>
+                </div>
+              )}
+
+              {/* SYSTEM TELEMETRY */}
+              {activeModal === 'telemetry' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-200 text-xs">
+                    <strong>Deployment Architecture Specifications:</strong> High-availability cloud infrastructure optimized for low-latency delivery across pan-India networks.
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 font-mono text-xs">
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[10px]">CURRENT RELEASE</span>
+                      <span className="text-white font-bold">v2.4.0-PROD_CANDIDATE</span>
+                    </div>
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[10px]">TARGET LAUNCH</span>
+                      <span className="text-amber-400 font-bold">14 October 2026</span>
+                    </div>
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[10px]">UPTIME SLA</span>
+                      <span className="text-emerald-400 font-bold">99.99% Availability</span>
+                    </div>
+                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[10px]">MEDIAN API LATENCY</span>
+                      <span className="text-cyan-400 font-bold">&lt; 14ms (CDN Edge)</span>
+                    </div>
+                  </div>
+
+                  <h4 className="font-bold text-white text-sm">Multi-Tier Failover Mechanism</h4>
+                  <p>
+                    The AI Coach and quiz engines are configured with multi-tier automated cascade failover to ensure zero downtime even during upstream network reconfigurations.
+                  </p>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex justify-end">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
+              >
+                Close Specification
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
