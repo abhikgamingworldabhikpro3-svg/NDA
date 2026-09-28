@@ -21,7 +21,16 @@ import {
   ChevronRight,
   Compass,
   Sparkles,
-  HelpCircle
+  HelpCircle,
+  Cpu,
+  Terminal,
+  Activity,
+  Lightbulb,
+  Coffee,
+  Gauge,
+  Sliders,
+  RefreshCw,
+  Power
 } from 'lucide-react';
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
@@ -65,6 +74,70 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     const interval = setInterval(updateCountdown, 1000);
     return () => clearInterval(interval);
   }, [targetDate]);
+
+  // Interactive Lab & Generator States
+  const [isTurbo, setIsTurbo] = useState(false);
+  const [coffeeBoost, setCoffeeBoost] = useState(false);
+  const [bulbBrightness, setBulbBrightness] = useState<'normal' | 'turbo' | 'dim'>('normal');
+  const [sparks, setSparks] = useState<{ id: number; x: number; y: number }[]>([]);
+  const [rpm, setRpm] = useState(2400);
+  const [voltage, setVoltage] = useState(238);
+  const [activeCodeLine, setActiveCodeLine] = useState(0);
+
+  // Live coder terminal logs
+  const codeLogs = [
+    { tag: "KERNEL", msg: "Ingesting 2026-2027 GAT Current Affairs Matrix into Neural Vault..." },
+    { tag: "DEFENSE", msg: "Calibrating Agni-V, BrahMos-ER & Astra Mk-1 missile telemetry vectors..." },
+    { tag: "EXAM-ENGINE", msg: "Synthesizing 150-Question UPSC NDA Mock Exam simulation routines..." },
+    { tag: "SPACED-REP", msg: "Compiling SM-2 optimal memory decay intervals for historic treaties..." },
+    { tag: "GEOPOLITICS", msg: "Indexing Malacca, Hormuz, and Bab-el-Mandeb strategic choke points..." },
+    { tag: "AUDIO-SYNTH", msg: "Rendering 3-minute tri-service morning intelligence audio capsule..." },
+    { tag: "DATA-CORE", msg: "Validating UPSC syllabus correlation index with 99.8% precision..." }
+  ];
+
+  // Rotate terminal logs
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveCodeLine(prev => (prev + 1) % codeLogs.length);
+    }, isTurbo ? 1200 : 2200);
+    return () => clearInterval(interval);
+  }, [isTurbo, codeLogs.length]);
+
+  // Dynamic RPM & Voltage fluctuation
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const baseRpm = isTurbo ? 4850 : 2400;
+      const baseVolt = isTurbo ? 248 : 238;
+      setRpm(baseRpm + Math.floor(Math.random() * 80 - 40));
+      setVoltage(baseVolt + (Math.random() * 2 - 1));
+    }, 400);
+    return () => clearInterval(interval);
+  }, [isTurbo]);
+
+  // Spark generator effect
+  const triggerSparks = () => {
+    const newSparks = Array.from({ length: 6 }).map((_, i) => ({
+      id: Date.now() + i,
+      x: (Math.random() - 0.5) * 40,
+      y: (Math.random() - 0.5) * 40
+    }));
+    setSparks(prev => [...prev, ...newSparks]);
+    setTimeout(() => {
+      setSparks(prev => prev.slice(newSparks.length));
+    }, 800);
+  };
+
+  const handleToggleTurbo = () => {
+    setIsTurbo(!isTurbo);
+    setBulbBrightness(!isTurbo ? 'turbo' : 'normal');
+    triggerSparks();
+  };
+
+  const handleBoostCoffee = () => {
+    setCoffeeBoost(true);
+    triggerSparks();
+    setTimeout(() => setCoffeeBoost(false), 8000);
+  };
 
   // Query Box Engine State
   const [activeTab, setActiveTab] = useState<'ai-coach' | 'submit-query'>('ai-coach');
@@ -185,122 +258,461 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-700 selection:text-white antialiased">
+    <div className="min-h-screen bg-[#060a12] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative overflow-hidden">
       
-      {/* Subtle Institutional Header Accent */}
-      <div className="h-1 bg-gradient-to-r from-amber-600 via-indigo-600 to-slate-800 w-full" />
+      {/* Background Ambience & Warm Bulb Bloom */}
+      <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
+      
+      {/* Dynamic Warm Filament Bloom from Overhead Bulbs */}
+      <div 
+        className={`absolute top-0 left-1/4 -translate-x-1/2 w-[550px] h-[350px] rounded-full blur-[120px] pointer-events-none transition-all duration-700 ${
+          bulbBrightness === 'turbo' 
+            ? 'bg-amber-400/35 scale-125' 
+            : bulbBrightness === 'dim' 
+            ? 'bg-amber-600/10 scale-75' 
+            : 'bg-amber-500/20'
+        }`} 
+      />
+      <div 
+        className={`absolute top-0 right-1/4 translate-x-1/2 w-[550px] h-[350px] rounded-full blur-[120px] pointer-events-none transition-all duration-700 ${
+          bulbBrightness === 'turbo' 
+            ? 'bg-amber-400/35 scale-125' 
+            : bulbBrightness === 'dim' 
+            ? 'bg-amber-600/10 scale-75' 
+            : 'bg-amber-500/20'
+        }`} 
+      />
 
-      {/* Top Institutional Bar */}
-      <header className="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md px-6 sm:px-10 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3.5">
-          <div className="h-10 w-10 rounded-xl bg-slate-800 border border-slate-700/80 flex items-center justify-center text-amber-400 shadow-sm">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-sm sm:text-base text-white tracking-tight">
-                National Defence Academy & Naval Academy
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-slate-400">
-              <span className="font-semibold text-slate-300">General Ability Test (GAT)</span>
-              <span aria-hidden="true" className="text-slate-600">·</span>
-              <span>Strategic Intelligence & Examination Portal</span>
-            </div>
+      {/* ========================================================================= */}
+      {/* HANGING VINTAGE INDUSTRIAL LIGHT BULBS (OVERHEAD)                          */}
+      {/* ========================================================================= */}
+      <div className="relative z-20 w-full max-w-5xl mx-auto px-6 flex justify-between pointer-events-none select-none -mt-2">
+        {/* Left Hanging Bulb */}
+        <div className="flex flex-col items-center animate-bulb-swing-1">
+          {/* Wire */}
+          <div className="w-0.5 h-16 sm:h-20 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
+          {/* Socket & Brass Fitting */}
+          <div className="w-4 h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
+          {/* Glass Bulb & Glowing Tungsten Filament */}
+          <div className={`relative w-8 h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
+            bulbBrightness === 'turbo' 
+              ? 'bg-amber-400/50 animate-bulb-turbo' 
+              : bulbBrightness === 'dim' 
+              ? 'bg-amber-800/20' 
+              : 'bg-amber-500/30 animate-bulb-glow'
+          }`}>
+            {/* Filament Loop */}
+            <div className="w-2.5 h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
           </div>
         </div>
 
-        <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
-          <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
-          <span className="font-medium text-slate-300">System Upgrade in Progress</span>
-          <span aria-hidden="true" className="text-slate-600">·</span>
-          <span className="text-amber-400 font-semibold">Deployment: 14 Oct 2026</span>
+        {/* Center Defense Seal / Brand */}
+        <div className="pt-4 flex items-center gap-2.5 opacity-90">
+          <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+          <span className="text-[10px] tracking-widest uppercase font-mono font-bold text-amber-300/90 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800">
+            ⚡ WAR ROOM LIVE DEPLOYMENT ENGINE
+          </span>
         </div>
-      </header>
 
-      {/* Main Content Area */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 space-y-12">
+        {/* Right Hanging Bulb */}
+        <div className="flex flex-col items-center animate-bulb-swing-2">
+          {/* Wire */}
+          <div className="w-0.5 h-20 sm:h-24 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
+          {/* Socket & Brass Fitting */}
+          <div className="w-4 h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
+          {/* Glass Bulb & Glowing Tungsten Filament */}
+          <div className={`relative w-8 h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
+            bulbBrightness === 'turbo' 
+              ? 'bg-amber-400/50 animate-bulb-turbo' 
+              : bulbBrightness === 'dim' 
+              ? 'bg-amber-800/20' 
+              : 'bg-amber-500/30 animate-bulb-glow'
+          }`}>
+            {/* Filament Loop */}
+            <div className="w-2.5 h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
+          </div>
+        </div>
+      </div>
+
+      {/* Main Container */}
+      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-10">
         
         {/* ========================================================================= */}
-        {/* 1. EXECUTIVE HERO & COUNTDOWN CHRONOMETER                                 */}
+        {/* HERO: INSTITUTIONAL BADGE & TITLE                                         */}
         {/* ========================================================================= */}
-        <section className="text-center space-y-6 max-w-3xl mx-auto">
-          
-          <div className="space-y-3">
-            <div className="inline-flex items-center gap-2 text-xs font-semibold text-amber-400 tracking-wider uppercase bg-amber-950/40 border border-amber-800/60 px-3.5 py-1 rounded-full">
-              <Clock className="h-3.5 w-3.5" />
-              <span>Official Release Target: 14 October 2026</span>
-            </div>
+        <div className="text-center space-y-4 max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900/90 border border-slate-800 text-slate-300 shadow-sm">
+            <Shield className="h-3.5 w-3.5 text-amber-400" />
+            <span>National Defence Academy & GAT Strategic Intelligence</span>
+            <span className="h-1 w-1 rounded-full bg-slate-600" />
+            <span className="text-amber-400 font-mono">Launch 14 Oct 2026</span>
+          </div>
 
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              Platform Architecture Upgrade
+          <div className="space-y-2">
+            <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+              Platform Upgrade Underway
             </h1>
-
-            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl mx-auto font-normal">
-              We are finalizing the comprehensive 2026–2027 UPSC NDA syllabus question vault, defense technology matrices, tri-service operational command datasets, and the adaptive revision engine.
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal max-w-2xl mx-auto">
+              Our engineering & defense content divisions are assembling the 2026-2027 UPSC NDA syllabus question vaults, defense missile database, and AI spaced repetition engine.
             </p>
           </div>
 
-          {/* Precision Chronometer Countdown */}
-          <div className="grid grid-cols-4 gap-3 sm:gap-4 max-w-lg mx-auto pt-2">
+          {/* Precision Chronometer */}
+          <div className="grid grid-cols-4 gap-2.5 sm:gap-4 max-w-lg mx-auto pt-2">
             {[
-              { label: "Days", value: timeLeft.days },
-              { label: "Hours", value: timeLeft.hours },
-              { label: "Minutes", value: timeLeft.minutes },
-              { label: "Seconds", value: timeLeft.seconds }
+              { label: "DAYS", value: timeLeft.days },
+              { label: "HOURS", value: timeLeft.hours },
+              { label: "MINUTES", value: timeLeft.minutes },
+              { label: "SECONDS", value: timeLeft.seconds }
             ].map((unit) => (
               <div 
                 key={unit.label}
-                className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-4 text-center shadow-md relative group hover:border-slate-700 transition"
+                className="bg-slate-900/90 border border-slate-800/90 rounded-xl p-3 sm:p-4 text-center shadow-md relative group hover:border-slate-700 transition"
               >
-                <span className="block text-2xl sm:text-4xl font-extrabold text-white font-tabular tracking-tight">
+                <span className="block text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-tabular">
                   {String(unit.value).padStart(2, '0')}
                 </span>
-                <span className="block text-[10px] sm:text-xs font-semibold text-slate-400 tracking-wider uppercase mt-1">
+                <span className="block text-[9px] sm:text-[10px] font-bold text-amber-400/90 tracking-wider uppercase mt-0.5">
                   {unit.label}
                 </span>
               </div>
             ))}
           </div>
+        </div>
+
+        {/* ========================================================================= */}
+        {/* ANIMATED WAR ROOM LAB: GENERATOR + CODERS AT WORK + TERMINAL RADAR        */}
+        {/* ========================================================================= */}
+        <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl backdrop-blur-md space-y-6 relative overflow-hidden">
+          
+          {/* Lab Section Header & Interactive Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
+                <Activity className="h-5 w-5 animate-pulse" />
+              </div>
+              <div>
+                <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
+                  <span>Engineers & Heavy Generators At Full Load</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                    ONLINE
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Real-time visualization of engineering pipelines and syllabus generator.
+                </p>
+              </div>
+            </div>
+
+            {/* Interactive Overclock & Lab Controls */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={handleToggleTurbo}
+                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer shadow-sm border ${
+                  isTurbo 
+                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
+                    : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
+                }`}
+              >
+                <Zap className={`h-3.5 w-3.5 ${isTurbo ? 'fill-current animate-bounce' : 'text-amber-400'}`} />
+                <span>{isTurbo ? 'Overclock Active (Turbo)' : 'Overclock Generator'}</span>
+              </button>
+
+              <button
+                onClick={handleBoostCoffee}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                  coffeeBoost 
+                    ? 'bg-amber-900/60 text-amber-200 border-amber-500' 
+                    : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
+                }`}
+                title="Feed coffee to coders"
+              >
+                <Coffee className={`h-3.5 w-3.5 text-amber-400 ${coffeeBoost ? 'animate-bounce' : ''}`} />
+                <span>{coffeeBoost ? 'Coffee Injected! ☕' : 'Coffee Fuel'}</span>
+              </button>
+
+              <button
+                onClick={() => setBulbBrightness(bulbBrightness === 'normal' ? 'turbo' : bulbBrightness === 'turbo' ? 'dim' : 'normal')}
+                className="p-1.5 rounded-xl bg-slate-950 border border-slate-700 hover:bg-slate-800 text-amber-400 transition cursor-pointer"
+                title="Cycle Bulb Brightness"
+              >
+                <Lightbulb className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Interactive Visual Grid: Generator (Left) + Coders Working (Center) + Live Terminal/Radar (Right) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+            
+            {/* 1. HEAVY INDUSTRIAL POWER GENERATOR (4 Cols) */}
+            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+              
+              {/* Exhaust Pipe with Rising Steam Puffs */}
+              <div className="absolute top-2 right-4 flex flex-col items-center">
+                <div className="w-4 h-3 bg-slate-700 rounded-t-sm border-t border-slate-500" />
+                <div className="relative">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-slate-300/30 blur-xs animate-steam-1" />
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-slate-200/20 blur-xs animate-steam-2" />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
+                    <Power className="h-3 w-3 text-amber-400" />
+                    DEFENSE-GEN-4 UNIT
+                  </span>
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                    isTurbo ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse' : 'bg-slate-800 text-slate-300'
+                  }`}>
+                    {isTurbo ? 'TURBO 4.8 kW' : 'NOMINAL 2.4 kW'}
+                  </span>
+                </div>
+
+                {/* Animated Rotating Gears & Machine Body */}
+                <div className="relative h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden p-2">
+                  
+                  {/* Central Main Gear */}
+                  <div className={`relative z-10 w-16 h-16 rounded-full border-4 border-dashed border-amber-500/80 bg-slate-950 flex items-center justify-center shadow-md ${
+                    isTurbo ? 'animate-spin-turbo border-amber-400' : 'animate-spin-slow'
+                  }`}>
+                    <div className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-amber-400" />
+                    </div>
+                  </div>
+
+                  {/* Secondary Interlocking Gear (Top Left) */}
+                  <div className={`absolute top-2 left-6 w-11 h-11 rounded-full border-3 border-dashed border-slate-600 bg-slate-900 flex items-center justify-center ${
+                    isTurbo ? 'animate-spin-fast' : 'animate-spin-reverse'
+                  }`}>
+                    <div className="w-3 h-3 rounded-full bg-slate-700" />
+                  </div>
+
+                  {/* High Speed Pinion Gear (Bottom Right) */}
+                  <div className={`absolute bottom-2 right-8 w-9 h-9 rounded-full border-2 border-dashed border-cyan-500/70 bg-slate-900 flex items-center justify-center ${
+                    isTurbo ? 'animate-spin-turbo' : 'animate-spin-fast'
+                  }`}>
+                    <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                  </div>
+
+                  {/* Piston Thrust Arm (Left) */}
+                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center">
+                    <div className={`w-3 h-8 rounded bg-gradient-to-b from-slate-600 to-slate-800 border border-slate-500 ${isTurbo ? 'animate-piston' : ''}`} />
+                  </div>
+
+                  {/* Sparks effect on Turbo */}
+                  {sparks.map(s => (
+                    <div 
+                      key={s.id} 
+                      className="absolute w-1.5 h-1.5 rounded-full bg-amber-300 shadow-[0_0_8px_#fbbf24] animate-ping"
+                      style={{ top: `calc(50% + ${s.y}px)`, left: `calc(50% + ${s.x}px)` }}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Live Generator Dials & Gauges */}
+              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800/80 mt-3 text-center">
+                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                  <span className="block text-[9px] text-slate-400 font-bold uppercase">ROTATION</span>
+                  <span className="block text-xs font-mono font-extrabold text-amber-400">{rpm} RPM</span>
+                </div>
+                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                  <span className="block text-[9px] text-slate-400 font-bold uppercase">VOLTAGE</span>
+                  <span className="block text-xs font-mono font-extrabold text-cyan-400">{voltage.toFixed(1)}V</span>
+                </div>
+                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
+                  <span className="block text-[9px] text-slate-400 font-bold uppercase">LOAD</span>
+                  <span className="block text-xs font-mono font-extrabold text-emerald-400">{isTurbo ? '99.4%' : '88.2%'}</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* 2. CODERS & DEFENSE ENGINEERS AT WORK (4 Cols) */}
+            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+              
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
+                    <User className="h-3 w-3 text-cyan-400" />
+                    DEV WORKSPACE POD
+                  </span>
+                  <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    ACTIVE CODING
+                  </span>
+                </div>
+
+                {/* Animated Coder Illustration & Multi-Monitor Workstation */}
+                <div className="relative h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-around p-3 overflow-hidden">
+                  
+                  {/* Coder 1 (Left - Defense AI Lead) */}
+                  <div className="flex flex-col items-center">
+                    {/* Head & Headphones */}
+                    <div className="relative">
+                      <div className="w-7 h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
+                        <div className="w-3.5 h-1 bg-cyan-400/80 rounded-full" />
+                      </div>
+                      {/* Headphones Arc */}
+                      <div className="absolute -top-1 -left-1 -right-1 h-4 border-t-2 border-x-2 border-amber-400 rounded-t-full" />
+                    </div>
+                    {/* Body & Moving Hands Typing */}
+                    <div className="w-10 h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
+                      <div className={`w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-1' : 'animate-typing-2'}`} />
+                    </div>
+                    {/* Desk & Glowing Laptop */}
+                    <div className="w-14 h-2 bg-slate-950 rounded-t border-t border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
+                  </div>
+
+                  {/* Center Coffee Station with Rising Steam */}
+                  <div className="flex flex-col items-center justify-end h-full pb-1">
+                    <div className="relative">
+                      {/* Rising Coffee Steam */}
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-200/40 blur-2xs animate-steam-1" />
+                      <div className="w-4 h-5 rounded-b-md bg-amber-800 border border-amber-600 flex items-center justify-center">
+                        <div className="text-[7px] font-bold text-amber-200">CA</div>
+                      </div>
+                    </div>
+                    <span className="text-[8px] font-mono text-slate-500 mt-1">COFFEE</span>
+                  </div>
+
+                  {/* Coder 2 (Right - GAT Content Specialist) */}
+                  <div className="flex flex-col items-center">
+                    {/* Head & Glasses */}
+                    <div className="relative">
+                      <div className="w-7 h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
+                        <div className="w-4 h-1.5 border border-emerald-400/80 rounded-xs" />
+                      </div>
+                    </div>
+                    {/* Body & Moving Hands Typing */}
+                    <div className="w-10 h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
+                      <div className={`w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-2' : 'animate-typing-1'}`} />
+                    </div>
+                    {/* Desk & Glowing Terminal Display */}
+                    <div className="w-14 h-2 bg-slate-950 rounded-t border-t border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Status Indicator */}
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-3 border-t border-slate-800/80 mt-3">
+                <span className="flex items-center gap-1">
+                  <Flame className="h-3 w-3 text-amber-500" />
+                  <span>BURNDOWN: 94.2%</span>
+                </span>
+                <span className="text-cyan-400">
+                  {coffeeBoost ? 'VELOCITY: 3.5x' : isTurbo ? 'VELOCITY: 2.0x' : 'VELOCITY: 1.0x'}
+                </span>
+              </div>
+
+            </div>
+
+            {/* 3. LIVE COMPILER TERMINAL & RADAR SWEEP (4 Cols) */}
+            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+              
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
+                    <Terminal className="h-3 w-3 text-emerald-400" />
+                    LIVE BUILD TELEMETRY
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[10px] font-mono font-bold text-slate-300">v2.8.4-DEV</span>
+                  </div>
+                </div>
+
+                {/* Radar + Live Terminal Feed */}
+                <div className="relative h-28 bg-slate-900/90 rounded-xl border border-slate-800 p-2.5 flex flex-col justify-between overflow-hidden">
+                  
+                  {/* Subtle Background Radar Sweep */}
+                  <div className="absolute right-2 bottom-2 w-16 h-16 rounded-full border border-emerald-500/20 pointer-events-none opacity-40">
+                    <div className="absolute inset-0 rounded-full border border-emerald-500/20" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-emerald-500/20" />
+                    {/* Rotating Radar Beam */}
+                    <div className="absolute top-0 left-1/2 w-0.5 h-8 bg-gradient-to-t from-emerald-400 to-transparent origin-bottom animate-radar" />
+                  </div>
+
+                  {/* Terminal Text Line */}
+                  <div className="space-y-1.5 z-10">
+                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400/90 font-bold">
+                      <span className="px-1.5 py-0.2 bg-amber-950/80 border border-amber-800 rounded">
+                        [{codeLogs[activeCodeLine].tag}]
+                      </span>
+                      <span className="text-emerald-400">READY</span>
+                    </div>
+                    <p className="text-[11px] font-mono text-slate-300 leading-snug line-clamp-2">
+                      {codeLogs[activeCodeLine].msg}
+                    </p>
+                  </div>
+
+                  {/* Blinking Server Rack LEDs */}
+                  <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/80 z-10">
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse delay-100" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse delay-200" />
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse delay-300" />
+                    <span className="text-[9px] font-mono text-slate-500 ml-auto">OCT_14_SYNC_OK</span>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Status indicator */}
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-3 border-t border-slate-800/80 mt-3">
+                <span className="flex items-center gap-1">
+                  <Compass className="h-3 w-3 text-cyan-400" />
+                  <span>SYLLABUS COVERAGE</span>
+                </span>
+                <span className="text-emerald-400 font-bold">98.9% VERIFIED</span>
+              </div>
+
+            </div>
+
+          </div>
 
         </section>
 
         {/* ========================================================================= */}
-        {/* 2. FULL-PAGE ASPIRANT QUERY & INTELLIGENCE DESK                           */}
+        {/* FULL-PAGE ASPIRANT QUERY & INTELLIGENCE DESK                              */}
         {/* ========================================================================= */}
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xl space-y-6">
+        <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-xl backdrop-blur-md space-y-6 relative overflow-hidden">
           
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
             <div>
-              <div className="flex items-center gap-2.5">
-                <Brain className="h-5 w-5 text-indigo-400" />
-                <h2 className="text-lg font-bold text-white tracking-tight">
+              <div className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-amber-400" />
+                <h2 className="text-base sm:text-lg font-bold text-white">
                   Aspirant Query & Syllabus Intelligence Desk
                 </h2>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
-                Consult the GAT Coach on defense topics or submit official syllabus requests for the 14 October release.
+              <p className="text-xs text-slate-400 mt-0.5">
+                Submit syllabus questions to the AI Coach or register topic requests to be prioritized for the 14 Oct deployment.
               </p>
             </div>
 
-            {/* Segmented Mode Controls */}
+            {/* Mode Switcher Tabs */}
             <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
               <button
                 onClick={() => setActiveTab('ai-coach')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                   activeTab === 'ai-coach'
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-amber-500 text-slate-950 shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <Zap className="h-3.5 w-3.5 text-amber-400" />
-                <span>Instant GAT Coach</span>
+                <Zap className="h-3.5 w-3.5 fill-current" />
+                <span>Instant AI Coach</span>
               </button>
               <button
                 onClick={() => setActiveTab('submit-query')}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                   activeTab === 'submit-query'
-                    ? 'bg-indigo-600 text-white shadow-sm'
+                    ? 'bg-slate-800 text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -310,14 +722,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </div>
           </div>
 
-          {/* TAB 1: INSTANT GAT COACH DESK */}
+          {/* TAB 1: INSTANT AI COACH QUERY BOX */}
           {activeTab === 'ai-coach' && (
             <div className="space-y-6">
               
-              {/* Curated Syllabus Topics */}
+              {/* Suggested Topic Chips */}
               <div className="space-y-2">
-                <span className="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                  <BookOpen className="h-3.5 w-3.5 text-slate-400" /> Curated Syllabus Inquiries:
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                  <Flame className="h-3 w-3 text-amber-500" /> Suggested High-Yield Query Topics:
                 </span>
                 <div className="flex items-center gap-2 flex-wrap">
                   {presetQueries.map((preset, idx) => (
@@ -327,7 +739,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                         setAiQuery(preset.text);
                         handleAskAICoach(preset.text);
                       }}
-                      className="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-800 bg-slate-950/60 hover:bg-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition cursor-pointer text-left"
+                      className="text-[11px] font-medium px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer text-left"
                     >
                       {preset.title}
                     </button>
@@ -335,54 +747,56 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                 </div>
               </div>
 
-              {/* Search & Query Input Bar */}
+              {/* Input Form Bar */}
               <form 
                 onSubmit={(e) => { e.preventDefault(); handleAskAICoach(); }}
-                className="flex gap-2 items-center bg-slate-950 border border-slate-800 p-2 rounded-xl focus-within:border-indigo-500 focus-within:ring-1 focus-within:ring-indigo-500 transition"
+                className="flex gap-2.5 items-center bg-slate-950 border border-slate-800 p-2 sm:p-2.5 rounded-2xl shadow-inner focus-within:border-amber-500/60 transition"
               >
                 <input
                   type="text"
                   value={aiQuery}
                   onChange={(e) => setAiQuery(e.target.value)}
-                  placeholder="Ask any GAT question: e.g. What are the key differences between ballistic and cruise missiles in India's arsenal?"
+                  placeholder="Ask any GAT topic: e.g. What are the key missile classifications, speeds, and DRDO ranges?"
                   className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none font-medium"
                   disabled={aiLoading}
                 />
                 <button
                   type="submit"
                   disabled={aiLoading || !aiQuery.trim()}
-                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer disabled:cursor-not-allowed shrink-0"
                 >
                   {aiLoading ? (
                     <>
-                      <Sparkles className="h-3.5 w-3.5 animate-spin text-amber-300" />
-                      <span>Consulting...</span>
+                      <Sparkles className="h-3.5 w-3.5 animate-spin text-slate-950" />
+                      <span>Processing...</span>
                     </>
                   ) : (
                     <>
                       <Send className="h-3.5 w-3.5" />
-                      <span>Submit Query</span>
+                      <span>Ask AI Coach</span>
                     </>
                   )}
                 </button>
               </form>
 
-              {/* Structured AI Intelligence Brief */}
+              {/* AI Query Result Display */}
               {aiResponse && (
-                <div className="bg-slate-950 border border-slate-800 rounded-xl p-5 sm:p-6 space-y-4 shadow-sm animate-in fade-in duration-200">
+                <div className="bg-slate-950 border border-slate-800/90 rounded-2xl p-5 sm:p-6 space-y-4 animate-in fade-in duration-300 shadow-xl">
                   <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-slate-300 uppercase tracking-wider">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                      <span>UPSC NDA GAT Academic Assessment</span>
+                    <div className="flex items-center gap-2">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                        UPSC NDA GAT Academic Intelligence Brief
+                      </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleToggleSpeech(aiResponse)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium transition cursor-pointer"
-                        title="Read Aloud"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-300 text-xs font-medium transition cursor-pointer"
+                        title="Listen Aloud"
                       >
-                        {speaking ? <VolumeX className="h-3.5 w-3.5 text-indigo-400" /> : <Volume2 className="h-3.5 w-3.5" />}
+                        {speaking ? <VolumeX className="h-3.5 w-3.5 text-amber-400" /> : <Volume2 className="h-3.5 w-3.5" />}
                         <span>{speaking ? 'Stop' : 'Listen'}</span>
                       </button>
 
@@ -392,7 +806,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                           setCopiedResponse(true);
                           setTimeout(() => setCopiedResponse(false), 2000);
                         }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium transition cursor-pointer"
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-300 text-xs font-medium transition cursor-pointer"
                       >
                         {copiedResponse ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
                         <span>{copiedResponse ? 'Copied' : 'Copy'}</span>
@@ -414,29 +828,29 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             <div className="space-y-6">
               
               {submittedQuery ? (
-                <div className="bg-emerald-950/20 border border-emerald-800/40 rounded-xl p-6 text-center space-y-3 animate-in fade-in">
-                  <div className="h-10 w-10 rounded-full bg-emerald-900/50 text-emerald-400 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="h-5 w-5" />
+                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3 animate-in fade-in">
+                  <div className="h-12 w-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="h-6 w-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white">Query Successfully Logged</h3>
+                    <h3 className="text-base font-bold text-white">Query Successfully Registered</h3>
                     <p className="text-xs text-slate-300 max-w-md mx-auto">
-                      Tracking Reference: <strong className="text-emerald-400 font-mono">{submittedQuery.id}</strong>. Our academic team will evaluate your topic request for the 14 October release.
+                      Tracking Reference: <strong className="text-emerald-400 font-mono">{submittedQuery.id}</strong>. Our editorial desk will review and integrate this topic into the **14 October 2026** platform deployment.
                     </p>
                   </div>
                   <button
                     onClick={() => setSubmittedQuery(null)}
-                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-semibold transition cursor-pointer"
+                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold transition cursor-pointer"
                   >
-                    Submit Another Inquiry
+                    Submit Another Query
                   </button>
                 </div>
               ) : (
                 <form onSubmit={handleSubmitQueryForm} className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                        Cadet / Aspirant Name *
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                        Aspirant Name *
                       </label>
                       <div className="relative">
                         <User className="h-4 w-4 text-slate-500 absolute left-3.5 top-3" />
@@ -445,14 +859,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                           required
                           value={formData.name}
                           onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="e.g. Rahul Sharma"
-                          className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition"
+                          placeholder="e.g. Cadet Rahul Sharma"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/60 transition"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                         Email Address *
                       </label>
                       <div className="relative">
@@ -463,7 +877,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                           value={formData.email}
                           onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                           placeholder="e.g. rahul.nda@gmail.com"
-                          className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg pl-10 pr-3.5 py-2.5 text-xs text-white placeholder-slate-500 outline-none transition"
+                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/60 transition"
                         />
                       </div>
                     </div>
@@ -471,61 +885,61 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                         Inquiry Category
                       </label>
                       <select
                         value={formData.category}
                         onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3.5 py-2.5 text-xs text-white outline-none transition cursor-pointer"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-amber-500/60 transition cursor-pointer"
                       >
                         <option value="Syllabus Topic Request">Syllabus Topic Request (Priority for 14 Oct)</option>
-                        <option value="Exam Guidance">UPSC NDA GAT Strategy & Planning</option>
-                        <option value="Defense News Inquiry">Defense Technology / Weaponry Data</option>
+                        <option value="Exam Guidance">UPSC NDA 1/2027 GAT Guidance</option>
+                        <option value="Defense News Inquiry">Defense Technology / Weaponry Inquiry</option>
                         <option value="Feature Suggestion">Feature Suggestion</option>
-                        <option value="Other">General Academic Inquiry</option>
+                        <option value="Other">General Inquiry</option>
                       </select>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                         Urgency Level
                       </label>
                       <select
                         value={formData.urgency}
                         onChange={(e) => setFormData({ ...formData, urgency: e.target.value as any })}
-                        className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3.5 py-2.5 text-xs text-white outline-none transition cursor-pointer"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-amber-500/60 transition cursor-pointer"
                       >
                         <option value="Normal">Normal Inquiry</option>
-                        <option value="High">High Priority (Exam Candidate)</option>
-                        <option value="Immediate">Urgent Feedback</option>
+                        <option value="High">High Priority (Exam in 2026/2027)</option>
+                        <option value="Immediate">Immediate Feedback</option>
                       </select>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      Detailed Query or Syllabus Topic Request *
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      Detailed Syllabus Query or Request *
                     </label>
                     <textarea
                       required
                       rows={4}
                       value={formData.query}
                       onChange={(e) => setFormData({ ...formData, query: e.target.value })}
-                      placeholder="Specify the exact defense topics, historical events, or syllabus areas you would like integrated prior to launch..."
-                      className="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg p-3.5 text-xs text-white placeholder-slate-500 outline-none transition leading-relaxed"
+                      placeholder="Describe the topics, questions, or specific features you would like to see covered upon our full launch on 14 October..."
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/60 transition leading-relaxed"
                     />
                   </div>
 
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold tracking-wide uppercase transition cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold tracking-wider uppercase shadow-md transition cursor-pointer disabled:bg-slate-800 disabled:text-slate-500 flex items-center justify-center gap-2"
                   >
                     {isSubmitting ? (
                       <>
-                        <Sparkles className="h-4 w-4 animate-spin text-amber-300" />
-                        <span>Logging Inquiry...</span>
+                        <Sparkles className="h-4 w-4 animate-spin text-slate-950" />
+                        <span>Transmitting Query to Editorial Desk...</span>
                       </>
                     ) : (
                       <>
@@ -543,61 +957,57 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         </section>
 
         {/* ========================================================================= */}
-        {/* 3. OCTOBER 14 ROADMAP MATRIX                                              */}
+        {/* ROADMAP & FEATURE MODULES                                                 */}
         {/* ========================================================================= */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           <div className="text-center space-y-1">
-            <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
-              Deployment Matrix • Scheduled for 14 October 2026
+            <h3 className="text-base sm:text-lg font-bold text-white">
+              Upcoming Modules Releasing 14 October 2026
             </h3>
             <p className="text-xs text-slate-400 max-w-lg mx-auto">
-              Key modules undergoing final verification and syllabus calibration:
+              Core academic frameworks prepared for UPSC NDA General Ability Test aspirants:
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             
-            {/* 1: Defense Capsules */}
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2.5 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-lg bg-indigo-950/80 border border-indigo-800/50 text-indigo-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-9 w-9 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center">
                 <Shield className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-semibold text-white">1,000+ Defense Capsules</h4>
+              <h4 className="text-sm font-bold text-white">1,000+ Defense Capsules</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Tri-service operations, bilateral exercises, DRDO weapon specifications, and static GK links.
+                Daily tri-service defense news, bilateral military drills, DRDO missile specifications, and static GK links.
               </p>
             </div>
 
-            {/* 2: Spaced Repetition */}
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2.5 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-lg bg-emerald-950/80 border border-emerald-800/50 text-emerald-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-9 w-9 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center">
                 <Zap className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-semibold text-white">Spaced Repetition Matrix</h4>
+              <h4 className="text-sm font-bold text-white">Spaced Repetition Matrix</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                SM-2 algorithm flashcard schedules to prevent memory decay on historical treaties, articles, and geographical passes.
+                SM-2 algorithm flashcard schedules to ensure zero memory decay for historical treaties and geographical passes.
               </p>
             </div>
 
-            {/* 3: 150-Q Full Mocks */}
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2.5 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-lg bg-amber-950/80 border border-amber-800/50 text-amber-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-9 w-9 rounded-xl bg-slate-800 text-cyan-400 flex items-center justify-center">
                 <Award className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-semibold text-white">150-Q GAT Full Mocks</h4>
+              <h4 className="text-sm font-bold text-white">150-Q GAT Full Mocks</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Full-length UPSC NDA exam simulation with negative marking (-0.83), timers, and percentile analytics.
+                Realistic UPSC NDA simulation with negative marking (-0.83), timers, and granular percentile analytics.
               </p>
             </div>
 
-            {/* 4: Audio Briefs */}
-            <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-2.5 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-lg bg-purple-950/80 border border-purple-800/50 text-purple-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-9 w-9 rounded-xl bg-slate-800 text-fuchsia-400 flex items-center justify-center">
                 <Volume2 className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-semibold text-white">Audio Intelligence Briefs</h4>
+              <h4 className="text-sm font-bold text-white">Audio Intelligence Briefs</h4>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Concise 3-minute morning audio digests for seamless revision during physical training or transit.
+                Hands-free 3-minute morning intelligence broadcasts to review news during physical training or commute.
               </p>
             </div>
 
@@ -607,13 +1017,8 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       </main>
 
       {/* Institutional Footer */}
-      <footer className="border-t border-slate-800 bg-slate-950 py-6 text-center text-xs text-slate-500">
-        <div className="max-w-4xl mx-auto px-4 space-y-1">
-          <p>© 2026 UPSC NDA General Ability Test (GAT) Academic Intelligence Engine</p>
-          <p className="text-[11px] text-slate-600">
-            Aligned with Union Public Service Commission (UPSC) Syllabus & Defence Services Examination Standards • Target Launch: 14 October 2026
-          </p>
-        </div>
+      <footer className="relative z-10 border-t border-slate-800/80 bg-slate-950 py-6 text-center text-xs text-slate-500 font-mono">
+        <p>© 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine • Scheduled Deployment: October 14, 2026</p>
       </footer>
 
     </div>
