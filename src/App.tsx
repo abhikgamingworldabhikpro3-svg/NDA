@@ -126,6 +126,15 @@ const MainAppContent: React.FC = () => {
     );
   }
 
+  // EXPLICIT ADMIN SECTION ROUTE (Guarded by Secret Code / Clearance Gate)
+  if (currentPath === '/admin') {
+    return (
+      <Admin 
+        onBack={() => navigate('/')} 
+      />
+    );
+  }
+
   // EXPLICIT UNDER CONSTRUCTION ROUTE OR DEFAULT LANDING TILL 14 OCT (Demo not accessible)
   if (isUnderConstructionPeriod || currentPath === '/under-construction' || currentPath === '/' || !currentUser) {
     return (

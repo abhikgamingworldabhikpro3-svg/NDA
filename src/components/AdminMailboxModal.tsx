@@ -41,17 +41,6 @@ export const AdminMailboxModal: React.FC<AdminMailboxModalProps> = ({ isOpen, on
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'inbox' | 'stats'>('inbox');
 
-  // Commander PIN Gate (Default: 1947 or instant 1-click unlock)
-  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem('nda_admin_mailbox_unlocked') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [pinInput, setPinInput] = useState('');
-  const [pinError, setPinError] = useState(false);
-
   const fetchQueries = async () => {
     setLoading(true);
     try {
@@ -65,25 +54,10 @@ export const AdminMailboxModal: React.FC<AdminMailboxModalProps> = ({ isOpen, on
   };
 
   useEffect(() => {
-    if (isOpen && isUnlocked) {
+    if (isOpen) {
       fetchQueries();
     }
-  }, [isOpen, isUnlocked]);
-
-  const handleUnlockWithPin = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const cleanPin = pinInput.trim();
-    if (cleanPin === '1947' || cleanPin === 'COMMANDER' || cleanPin === 'admin' || cleanPin === '') {
-      setIsUnlocked(true);
-      try {
-        sessionStorage.setItem('nda_admin_mailbox_unlocked', 'true');
-      } catch {}
-      setPinError(false);
-      fetchQueries();
-    } else {
-      setPinError(true);
-    }
-  };
+  }, [isOpen]);
 
   const handleStatusChange = async (id: string, newStatus: 'received' | 'in-review' | 'answered') => {
     await userQueryService.updateQueryStatus(id, newStatus);
@@ -193,7 +167,7 @@ export const AdminMailboxModal: React.FC<AdminMailboxModalProps> = ({ isOpen, on
           <div className="flex items-center gap-2">
             <button
               onClick={fetchQueries}
-              disabled={loading || !isUnlocked}
+              disabled={loading}
               title="Refresh Mailbox Feed"
               className="p-2 text-slate-400 hover:text-white bg-[#152217] hover:bg-[#1d2f20] border border-[#253928] rounded-lg transition-colors cursor-pointer"
             >
@@ -210,68 +184,8 @@ export const AdminMailboxModal: React.FC<AdminMailboxModalProps> = ({ isOpen, on
           </div>
         </div>
 
-        {/* PIN UNLOCK SCREEN IF LOCKED */}
-        {!isUnlocked ? (
-          <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-6">
-            <div className="w-16 h-16 rounded-full bg-[#162419] border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-xl">
-              <Lock className="w-8 h-8" />
-            </div>
-
-            <div className="space-y-2 max-w-md">
-              <h4 className="text-xl font-bold uppercase text-white tracking-wide">
-                Commander Security Clearance Required
-              </h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                This inbox contains private aspirant emails and strategic topic requests. Enter your PIN or click the instant commander access key to proceed.
-              </p>
-            </div>
-
-            <form onSubmit={handleUnlockWithPin} className="max-w-xs w-full space-y-3">
-              <div>
-                <input
-                  type="password"
-                  value={pinInput}
-                  onChange={(e) => {
-                    setPinInput(e.target.value);
-                    setPinError(false);
-                  }}
-                  placeholder="Enter PIN (Default: 1947)"
-                  className="w-full bg-[#070c08] border border-[#2a3e2e] focus:border-amber-500 text-center text-slate-100 text-sm py-2.5 px-4 rounded-xl outline-none tracking-widest font-mono"
-                  autoFocus
-                />
-                {pinError && (
-                  <p className="text-rose-400 text-[11px] mt-1 font-bold">
-                    Incorrect PIN. Use 1947 or click Instant Unlock.
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Unlock className="w-4 h-4" />
-                <span>Unlock Mailbox Console</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsUnlocked(true);
-                  try {
-                    sessionStorage.setItem('nda_admin_mailbox_unlocked', 'true');
-                  } catch {}
-                  fetchQueries();
-                }}
-                className="w-full py-2 bg-[#142016] hover:bg-[#1a2b1d] text-amber-400 border border-amber-600/30 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
-              >
-                ⚡ Instant 1-Click Commander Pass
-              </button>
-            </form>
-          </div>
-        ) : (
-          /* MAIN MAILBOX WORKSPACE */
-          <div className="flex-1 flex flex-col min-h-0">
+        {/* MAIN MAILBOX WORKSPACE */}
+        <div className="flex-1 flex flex-col min-h-0">
             
             {/* Telemetry Summary Strip */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-3 sm:px-5 bg-[#09100a] border-b border-[#223525] shrink-0 text-xs">
@@ -569,22 +483,16 @@ export const AdminMailboxModal: React.FC<AdminMailboxModalProps> = ({ isOpen, on
 
               <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    setIsUnlocked(false);
-                    try {
-                      sessionStorage.removeItem('nda_admin_mailbox_unlocked');
-                    } catch {}
-                  }}
-                  className="text-slate-400 hover:text-amber-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                  onClick={handleExportCSV}
+                  className="px-3 py-1 bg-[#142016] hover:bg-[#1a2b1d] text-amber-400 border border-amber-600/30 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-1.5 cursor-pointer"
                 >
-                  <Lock className="w-3.5 h-3.5" />
-                  <span>Lock Mailbox</span>
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download CSV</span>
                 </button>
               </div>
             </div>
 
           </div>
-        )}
 
       </div>
     </div>

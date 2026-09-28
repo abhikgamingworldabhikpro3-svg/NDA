@@ -1481,6 +1481,19 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onLaunchNo
               >
                 Terms of Use
               </button>
+              <span>·</span>
+              <a 
+                href="/admin"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.history.pushState({}, '', '/admin');
+                  window.dispatchEvent(new PopStateEvent('popstate'));
+                }}
+                className="hover:text-amber-400 transition-colors inline-flex items-center gap-1 font-bold text-amber-500/80 cursor-pointer"
+                title="Command Headquarters Admin Clearance"
+              >
+                <Lock className="w-3 h-3 text-amber-500" /> Admin Access
+              </a>
             </div>
           </div>
 
