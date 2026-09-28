@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Shield, 
   Clock, 
@@ -37,7 +37,11 @@ import {
   X,
   ExternalLink,
   CheckCircle,
-  Copyright
+  Copyright,
+  Phone,
+  ArrowUpRight,
+  Share2,
+  Sparkle
 } from 'lucide-react';
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
@@ -58,7 +62,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     hours: number;
     minutes: number;
     seconds: number;
-  }>({ days: 16, hours: 4, minutes: 54, seconds: 12 });
+  }>({ days: 15, hours: 23, minutes: 48, seconds: 32 });
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -88,11 +92,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   const [bulbBrightness, setBulbBrightness] = useState<'normal' | 'turbo' | 'dim'>('normal');
   const [sparks, setSparks] = useState<{ id: number; x: number; y: number }[]>([]);
   const [rpm, setRpm] = useState(2400);
-  const [voltage, setVoltage] = useState(238);
+  const [voltage, setVoltage] = useState(238.4);
   const [activeCodeLine, setActiveCodeLine] = useState(0);
 
   // Modal Dialog States for Footer Legal, Copyright & Security
   const [activeModal, setActiveModal] = useState<'privacy' | 'copyright' | 'security' | 'terms' | 'telemetry' | null>(null);
+
+  // Query section reference for smooth scrolling
+  const querySectionRef = useRef<HTMLElement>(null);
 
   // Live coder terminal logs
   const codeLogs = [
@@ -109,7 +116,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveCodeLine(prev => (prev + 1) % codeLogs.length);
-    }, isTurbo ? 1200 : 2200);
+    }, isTurbo ? 1200 : 2400);
     return () => clearInterval(interval);
   }, [isTurbo, codeLogs.length]);
 
@@ -117,10 +124,10 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       const baseRpm = isTurbo ? 4850 : 2400;
-      const baseVolt = isTurbo ? 248 : 238;
-      setRpm(baseRpm + Math.floor(Math.random() * 80 - 40));
-      setVoltage(baseVolt + (Math.random() * 2 - 1));
-    }, 400);
+      const baseVolt = isTurbo ? 248.5 : 238.4;
+      setRpm(baseRpm + Math.floor(Math.random() * 60 - 30));
+      setVoltage(baseVolt + (Math.random() * 1.5 - 0.75));
+    }, 450);
     return () => clearInterval(interval);
   }, [isTurbo]);
 
@@ -267,26 +274,33 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     }
   };
 
+  const scrollToQuery = (tab: 'ai-coach' | 'submit-query') => {
+    setActiveTab(tab);
+    if (querySectionRef.current) {
+      querySectionRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#060a12] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative overflow-hidden">
+    <div className="min-h-screen bg-[#070c18] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative overflow-x-hidden pb-16 sm:pb-0">
       
-      {/* Background Ambience & Warm Bulb Bloom */}
-      <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:24px_24px] opacity-20 pointer-events-none" />
+      {/* Background Ambience: Deep Military Sapphire Grid & Precision Radial Glow */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
       
-      {/* Dynamic Warm Filament Bloom from Overhead Bulbs */}
+      {/* Ambient Warm Tungsten Bloom */}
       <div 
-        className={`absolute top-0 left-1/4 -translate-x-1/2 w-[550px] h-[350px] rounded-full blur-[120px] pointer-events-none transition-all duration-700 ${
+        className={`absolute top-0 left-1/4 -translate-x-1/2 w-[300px] sm:w-[600px] h-[200px] sm:h-[350px] rounded-full blur-[100px] sm:blur-[140px] pointer-events-none transition-all duration-700 ${
           bulbBrightness === 'turbo' 
-            ? 'bg-amber-400/35 scale-125' 
+            ? 'bg-amber-400/35 scale-110' 
             : bulbBrightness === 'dim' 
             ? 'bg-amber-600/10 scale-75' 
             : 'bg-amber-500/20'
         }`} 
       />
       <div 
-        className={`absolute top-0 right-1/4 translate-x-1/2 w-[550px] h-[350px] rounded-full blur-[120px] pointer-events-none transition-all duration-700 ${
+        className={`absolute top-0 right-1/4 translate-x-1/2 w-[300px] sm:w-[600px] h-[200px] sm:h-[350px] rounded-full blur-[100px] sm:blur-[140px] pointer-events-none transition-all duration-700 ${
           bulbBrightness === 'turbo' 
-            ? 'bg-amber-400/35 scale-125' 
+            ? 'bg-amber-400/35 scale-110' 
             : bulbBrightness === 'dim' 
             ? 'bg-amber-600/10 scale-75' 
             : 'bg-amber-500/20'
@@ -294,75 +308,75 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       />
 
       {/* ========================================================================= */}
-      {/* HANGING VINTAGE INDUSTRIAL LIGHT BULBS (OVERHEAD)                          */}
+      {/* HANGING VINTAGE INDUSTRIAL LIGHT BULBS (RESPONSIVE OVERHEAD)              */}
       {/* ========================================================================= */}
-      <div className="relative z-20 w-full max-w-5xl mx-auto px-6 flex justify-between pointer-events-none select-none -mt-2">
+      <div className="relative z-20 w-full max-w-5xl mx-auto px-4 sm:px-6 flex justify-between pointer-events-none select-none -mt-1 sm:-mt-2">
         {/* Left Hanging Bulb */}
         <div className="flex flex-col items-center animate-bulb-swing-1">
-          <div className="w-0.5 h-16 sm:h-20 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
-          <div className="w-4 h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
-          <div className={`relative w-8 h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
+          <div className="w-0.5 h-8 sm:h-16 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
+          <div className="w-3.5 sm:w-4 h-3 sm:h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
+          <div className={`relative w-6 sm:w-8 h-8 sm:h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
             bulbBrightness === 'turbo' 
               ? 'bg-amber-400/50 animate-bulb-turbo' 
               : bulbBrightness === 'dim' 
               ? 'bg-amber-800/20' 
               : 'bg-amber-500/30 animate-bulb-glow'
           }`}>
-            <div className="w-2.5 h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
+            <div className="w-2 sm:w-2.5 h-3 sm:h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
           </div>
         </div>
 
-        {/* Center Defense Seal / Brand */}
-        <div className="pt-4 flex items-center gap-2.5 opacity-90">
-          <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-          <span className="text-[10px] tracking-widest uppercase font-mono font-bold text-amber-300/90 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-800">
-            ⚡ WAR ROOM LIVE DEPLOYMENT ENGINE
+        {/* Center Defense Seal / Brand Header */}
+        <div className="pt-2 sm:pt-4 flex items-center gap-1.5 sm:gap-2.5">
+          <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+          <span className="text-[9px] sm:text-[10px] tracking-wider uppercase font-mono font-bold text-amber-300/95 bg-slate-900/90 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-slate-800 shadow-sm">
+            ⚡ WAR ROOM LIVE DEPLOYMENT
           </span>
         </div>
 
         {/* Right Hanging Bulb */}
         <div className="flex flex-col items-center animate-bulb-swing-2">
-          <div className="w-0.5 h-20 sm:h-24 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
-          <div className="w-4 h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
-          <div className={`relative w-8 h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
+          <div className="w-0.5 h-10 sm:h-20 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
+          <div className="w-3.5 sm:w-4 h-3 sm:h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
+          <div className={`relative w-6 sm:w-8 h-8 sm:h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
             bulbBrightness === 'turbo' 
               ? 'bg-amber-400/50 animate-bulb-turbo' 
               : bulbBrightness === 'dim' 
               ? 'bg-amber-800/20' 
               : 'bg-amber-500/30 animate-bulb-glow'
           }`}>
-            <div className="w-2.5 h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
+            <div className="w-2 sm:w-2.5 h-3 sm:h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
             <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
           </div>
         </div>
       </div>
 
-      {/* Main Container */}
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-10">
+      {/* Main Content Area */}
+      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-3 sm:py-8 space-y-8 sm:space-y-10">
         
         {/* ========================================================================= */}
-        {/* HERO: INSTITUTIONAL BADGE & TITLE                                         */}
+        {/* HERO: EXECUTIVE DEFENSE BADGE, TITLE & MOBILE CHRONOMETER                 */}
         {/* ========================================================================= */}
-        <div className="text-center space-y-4 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-slate-900/90 border border-slate-800 text-slate-300 shadow-sm">
-            <Shield className="h-3.5 w-3.5 text-amber-400" />
-            <span>National Defence Academy & GAT Strategic Intelligence</span>
-            <span className="h-1 w-1 rounded-full bg-slate-600" />
-            <span className="text-amber-400 font-mono">Launch 14 Oct 2026</span>
+        <div className="text-center space-y-3.5 sm:space-y-4 max-w-3xl mx-auto pt-1">
+          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold bg-slate-900/90 border border-slate-800 text-slate-300 shadow-sm">
+            <Shield className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+            <span className="truncate max-w-[220px] sm:max-w-none">UPSC National Defence Academy & GAT Intelligence</span>
+            <span className="h-1 w-1 rounded-full bg-slate-600 hidden sm:inline-block" />
+            <span className="text-amber-400 font-mono hidden sm:inline-block">14 Oct 2026</span>
           </div>
 
-          <div className="space-y-2">
-            <h1 className="text-3xl sm:text-5xl font-extrabold text-white tracking-tight leading-tight">
+          <div className="space-y-1.5 sm:space-y-2">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
               Platform Upgrade Underway
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal max-w-2xl mx-auto">
-              Our engineering & defense content divisions are assembling the 2026-2027 UPSC NDA syllabus question vaults, defense missile database, and AI spaced repetition engine.
+            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal max-w-2xl mx-auto px-2">
+              Our engineering & defense content divisions are assembling the 2026-2027 UPSC NDA question vaults, defense missile telemetry database, and AI spaced repetition engine.
             </p>
           </div>
 
-          {/* Precision Chronometer */}
-          <div className="grid grid-cols-4 gap-2.5 sm:gap-4 max-w-lg mx-auto pt-2">
+          {/* Precision Chronometer (Responsive 4-Grid for Mobile) */}
+          <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-md sm:max-w-lg mx-auto pt-1 sm:pt-2">
             {[
               { label: "DAYS", value: timeLeft.days },
               { label: "HOURS", value: timeLeft.hours },
@@ -371,12 +385,12 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             ].map((unit) => (
               <div 
                 key={unit.label}
-                className="bg-slate-900/90 border border-slate-800/90 rounded-xl p-3 sm:p-4 text-center shadow-md relative group hover:border-slate-700 transition"
+                className="bg-slate-900/90 border border-slate-800/90 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center shadow-md relative group hover:border-slate-700 transition"
               >
-                <span className="block text-2xl sm:text-3xl font-extrabold text-white tracking-tight font-tabular">
+                <span className="block text-xl sm:text-3xl font-extrabold text-white tracking-tight font-tabular">
                   {String(unit.value).padStart(2, '0')}
                 </span>
-                <span className="block text-[9px] sm:text-[10px] font-bold text-amber-400/90 tracking-wider uppercase mt-0.5">
+                <span className="block text-[8px] sm:text-[10px] font-bold text-amber-400/90 tracking-wider uppercase mt-0.5">
                   {unit.label}
                 </span>
               </div>
@@ -387,58 +401,59 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         {/* ========================================================================= */}
         {/* ANIMATED WAR ROOM LAB: GENERATOR + CODERS AT WORK + TERMINAL RADAR        */}
         {/* ========================================================================= */}
-        <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-7 shadow-xl backdrop-blur-md space-y-6 relative overflow-hidden">
+        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xl backdrop-blur-md space-y-4 sm:space-y-6 relative overflow-hidden">
           
-          {/* Lab Section Header & Interactive Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400">
-                <Activity className="h-5 w-5 animate-pulse" />
+          {/* Lab Header & Action Controls */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800/80 pb-3 sm:pb-4">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
+                <Activity className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-                  <span>Engineers & Heavy Generators At Full Load</span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-                    ONLINE
+                <h3 className="text-xs sm:text-base font-extrabold text-white flex items-center gap-1.5 sm:gap-2">
+                  <span>Engineers & Power Generators Active</span>
+                  <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
+                    FULL LOAD
                   </span>
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Real-time visualization of engineering pipelines and syllabus generator.
+                <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block">
+                  Live visualization of engineering pipelines and syllabus generator.
                 </p>
               </div>
             </div>
 
             {/* Interactive Overclock & Lab Controls */}
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
               <button
                 onClick={handleToggleTurbo}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer shadow-sm border ${
+                className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition cursor-pointer shadow-sm border ${
                   isTurbo 
                     ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
                     : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
                 }`}
               >
                 <Zap className={`h-3.5 w-3.5 ${isTurbo ? 'fill-current animate-bounce' : 'text-amber-400'}`} />
-                <span>{isTurbo ? 'Overclock Active (Turbo)' : 'Overclock Generator'}</span>
+                <span>{isTurbo ? 'Overclock ON' : 'Overclock Gen'}</span>
               </button>
 
               <button
                 onClick={handleBoostCoffee}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition cursor-pointer border ${
                   coffeeBoost 
                     ? 'bg-amber-900/60 text-amber-200 border-amber-500' 
                     : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
                 }`}
-                title="Feed coffee to coders"
+                title="Boost coders with coffee"
               >
                 <Coffee className={`h-3.5 w-3.5 text-amber-400 ${coffeeBoost ? 'animate-bounce' : ''}`} />
-                <span>{coffeeBoost ? 'Coffee Injected! ☕' : 'Coffee Fuel'}</span>
+                <span>{coffeeBoost ? 'Coffee ☕' : 'Coffee Fuel'}</span>
               </button>
 
               <button
                 onClick={() => setBulbBrightness(bulbBrightness === 'normal' ? 'turbo' : bulbBrightness === 'turbo' ? 'dim' : 'normal')}
-                className="p-1.5 rounded-xl bg-slate-950 border border-slate-700 hover:bg-slate-800 text-amber-400 transition cursor-pointer"
+                className="p-2 sm:p-1.5 rounded-xl bg-slate-950 border border-slate-700 hover:bg-slate-800 text-amber-400 transition cursor-pointer shrink-0"
                 title="Cycle Bulb Brightness"
+                aria-label="Toggle Bulb Brightness"
               >
                 <Lightbulb className="h-4 w-4" />
               </button>
@@ -446,27 +461,27 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
           </div>
 
           {/* Interactive Visual Grid: Generator (Left) + Coders Working (Center) + Live Terminal/Radar (Right) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-5 items-stretch">
             
             {/* 1. HEAVY INDUSTRIAL POWER GENERATOR (4 Cols) */}
-            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 sm:p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
               
               {/* Exhaust Pipe with Rising Steam Puffs */}
               <div className="absolute top-2 right-4 flex flex-col items-center">
-                <div className="w-4 h-3 bg-slate-700 rounded-t-sm border-t border-slate-500" />
+                <div className="w-3.5 h-2.5 bg-slate-700 rounded-t-sm border-t border-slate-500" />
                 <div className="relative">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-2.5 h-2.5 rounded-full bg-slate-300/30 blur-xs animate-steam-1" />
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3.5 h-3.5 rounded-full bg-slate-200/20 blur-xs animate-steam-2" />
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-300/30 blur-xs animate-steam-1" />
+                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-slate-200/20 blur-xs animate-steam-2" />
                 </div>
               </div>
 
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
                     <Power className="h-3 w-3 text-amber-400" />
-                    DEFENSE-GEN-4 UNIT
+                    GEN-4 DIESEL UNIT
                   </span>
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                  <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
                     isTurbo ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse' : 'bg-slate-800 text-slate-300'
                   }`}>
                     {isTurbo ? 'TURBO 4.8 kW' : 'NOMINAL 2.4 kW'}
@@ -474,34 +489,34 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                 </div>
 
                 {/* Animated Rotating Gears & Machine Body */}
-                <div className="relative h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden p-2">
+                <div className="relative h-24 sm:h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden p-2">
                   
                   {/* Central Main Gear */}
-                  <div className={`relative z-10 w-16 h-16 rounded-full border-4 border-dashed border-amber-500/80 bg-slate-950 flex items-center justify-center shadow-md ${
+                  <div className={`relative z-10 w-14 sm:w-16 h-14 sm:h-16 rounded-full border-4 border-dashed border-amber-500/80 bg-slate-950 flex items-center justify-center shadow-md ${
                     isTurbo ? 'animate-spin-turbo border-amber-400' : 'animate-spin-slow'
                   }`}>
-                    <div className="w-6 h-6 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
+                    <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-amber-400" />
                     </div>
                   </div>
 
-                  {/* Secondary Interlocking Gear (Top Left) */}
-                  <div className={`absolute top-2 left-6 w-11 h-11 rounded-full border-3 border-dashed border-slate-600 bg-slate-900 flex items-center justify-center ${
+                  {/* Secondary Interlocking Gear */}
+                  <div className={`absolute top-2 left-4 sm:left-6 w-10 sm:w-11 h-10 sm:h-11 rounded-full border-3 border-dashed border-slate-600 bg-slate-900 flex items-center justify-center ${
                     isTurbo ? 'animate-spin-fast' : 'animate-spin-reverse'
                   }`}>
-                    <div className="w-3 h-3 rounded-full bg-slate-700" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-700" />
                   </div>
 
-                  {/* High Speed Pinion Gear (Bottom Right) */}
-                  <div className={`absolute bottom-2 right-8 w-9 h-9 rounded-full border-2 border-dashed border-cyan-500/70 bg-slate-900 flex items-center justify-center ${
+                  {/* High Speed Pinion Gear */}
+                  <div className={`absolute bottom-2 right-6 sm:right-8 w-8 sm:w-9 h-8 sm:h-9 rounded-full border-2 border-dashed border-cyan-500/70 bg-slate-900 flex items-center justify-center ${
                     isTurbo ? 'animate-spin-turbo' : 'animate-spin-fast'
                   }`}>
-                    <div className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
                   </div>
 
-                  {/* Piston Thrust Arm (Left) */}
+                  {/* Piston Thrust Arm */}
                   <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center">
-                    <div className={`w-3 h-8 rounded bg-gradient-to-b from-slate-600 to-slate-800 border border-slate-500 ${isTurbo ? 'animate-piston' : ''}`} />
+                    <div className={`w-2.5 sm:w-3 h-7 sm:h-8 rounded bg-gradient-to-b from-slate-600 to-slate-800 border border-slate-500 ${isTurbo ? 'animate-piston' : ''}`} />
                   </div>
 
                   {/* Sparks effect on Turbo */}
@@ -516,84 +531,84 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
               </div>
 
               {/* Live Generator Dials & Gauges */}
-              <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-800/80 mt-3 text-center">
-                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
-                  <span className="block text-[9px] text-slate-400 font-bold uppercase">ROTATION</span>
-                  <span className="block text-xs font-mono font-extrabold text-amber-400">{rpm} RPM</span>
+              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2.5 border-t border-slate-800/80 mt-2.5 text-center">
+                <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+                  <span className="block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase">ROTATION</span>
+                  <span className="block text-[11px] sm:text-xs font-mono font-extrabold text-amber-400">{rpm} RPM</span>
                 </div>
-                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
-                  <span className="block text-[9px] text-slate-400 font-bold uppercase">VOLTAGE</span>
-                  <span className="block text-xs font-mono font-extrabold text-cyan-400">{voltage.toFixed(1)}V</span>
+                <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+                  <span className="block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase">VOLTAGE</span>
+                  <span className="block text-[11px] sm:text-xs font-mono font-extrabold text-cyan-400">{voltage.toFixed(1)}V</span>
                 </div>
-                <div className="bg-slate-900/80 p-1.5 rounded-lg border border-slate-800">
-                  <span className="block text-[9px] text-slate-400 font-bold uppercase">LOAD</span>
-                  <span className="block text-xs font-mono font-extrabold text-emerald-400">{isTurbo ? '99.4%' : '88.2%'}</span>
+                <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-800">
+                  <span className="block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase">LOAD</span>
+                  <span className="block text-[11px] sm:text-xs font-mono font-extrabold text-emerald-400">{isTurbo ? '99.4%' : '88.2%'}</span>
                 </div>
               </div>
 
             </div>
 
             {/* 2. CODERS & DEFENSE ENGINEERS AT WORK (4 Cols) */}
-            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 sm:p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
               
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
                     <User className="h-3 w-3 text-cyan-400" />
                     DEV WORKSPACE POD
                   </span>
-                  <span className="text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
+                  <span className="text-[9px] sm:text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
                     ACTIVE CODING
                   </span>
                 </div>
 
                 {/* Animated Coder Illustration & Multi-Monitor Workstation */}
-                <div className="relative h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-around p-3 overflow-hidden">
+                <div className="relative h-24 sm:h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-around p-2.5 overflow-hidden">
                   
                   {/* Coder 1 (Left - Defense AI Lead) */}
                   <div className="flex flex-col items-center">
                     <div className="relative">
-                      <div className="w-7 h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
-                        <div className="w-3.5 h-1 bg-cyan-400/80 rounded-full" />
+                      <div className="w-6 sm:w-7 h-6 sm:h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
+                        <div className="w-3 h-1 bg-cyan-400/80 rounded-full" />
                       </div>
-                      <div className="absolute -top-1 -left-1 -right-1 h-4 border-t-2 border-x-2 border-amber-400 rounded-t-full" />
+                      <div className="absolute -top-1 -left-1 -right-1 h-3.5 sm:h-4 border-t-2 border-x-2 border-amber-400 rounded-t-full" />
                     </div>
-                    <div className="w-10 h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
-                      <div className={`w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-1' : 'animate-typing-2'}`} />
+                    <div className="w-9 sm:w-10 h-6 sm:h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
+                      <div className={`w-5 sm:w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-1' : 'animate-typing-2'}`} />
                     </div>
-                    <div className="w-14 h-2 bg-slate-950 rounded-t border-t border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
+                    <div className="w-12 sm:w-14 h-1.5 sm:h-2 bg-slate-950 rounded-t border-t border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
                   </div>
 
                   {/* Center Coffee Station with Rising Steam */}
                   <div className="flex flex-col items-center justify-end h-full pb-1">
                     <div className="relative">
                       <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-200/40 blur-2xs animate-steam-1" />
-                      <div className="w-4 h-5 rounded-b-md bg-amber-800 border border-amber-600 flex items-center justify-center">
-                        <div className="text-[7px] font-bold text-amber-200">CA</div>
+                      <div className="w-3.5 sm:w-4 h-4 sm:h-5 rounded-b-md bg-amber-800 border border-amber-600 flex items-center justify-center">
+                        <div className="text-[6px] sm:text-[7px] font-bold text-amber-200">CA</div>
                       </div>
                     </div>
-                    <span className="text-[8px] font-mono text-slate-500 mt-1">COFFEE</span>
+                    <span className="text-[7px] sm:text-[8px] font-mono text-slate-500 mt-0.5">COFFEE</span>
                   </div>
 
                   {/* Coder 2 (Right - GAT Content Specialist) */}
                   <div className="flex flex-col items-center">
                     <div className="relative">
-                      <div className="w-7 h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
-                        <div className="w-4 h-1.5 border border-emerald-400/80 rounded-xs" />
+                      <div className="w-6 sm:w-7 h-6 sm:h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
+                        <div className="w-3.5 h-1 border border-emerald-400/80 rounded-xs" />
                       </div>
                     </div>
-                    <div className="w-10 h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
-                      <div className={`w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-2' : 'animate-typing-1'}`} />
+                    <div className="w-9 sm:w-10 h-6 sm:h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
+                      <div className={`w-5 sm:w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-2' : 'animate-typing-1'}`} />
                     </div>
-                    <div className="w-14 h-2 bg-slate-950 rounded-t border-t border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+                    <div className="w-12 sm:w-14 h-1.5 sm:h-2 bg-slate-950 rounded-t border-t border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
                   </div>
 
                 </div>
               </div>
 
               {/* Status Indicator */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-3 border-t border-slate-800/80 mt-3">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2.5 border-t border-slate-800/80 mt-2.5">
                 <span className="flex items-center gap-1">
                   <Flame className="h-3 w-3 text-amber-500" />
                   <span>BURNDOWN: 94.2%</span>
@@ -606,39 +621,39 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </div>
 
             {/* 3. LIVE COMPILER TERMINAL & RADAR SWEEP (4 Cols) */}
-            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
+            <div className="lg:col-span-4 md:col-span-2 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 sm:p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
               
               <div>
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2.5">
                   <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
                     <Terminal className="h-3 w-3 text-emerald-400" />
-                    LIVE BUILD TELEMETRY
+                    BUILD TELEMETRY
                   </span>
                   <div className="flex items-center gap-1">
-                    <div className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[10px] font-mono font-bold text-slate-300">v2.4.0-RC3</span>
+                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                    <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-300">v2.4.0-RC3</span>
                   </div>
                 </div>
 
                 {/* Radar + Live Terminal Feed */}
-                <div className="relative h-28 bg-slate-900/90 rounded-xl border border-slate-800 p-2.5 flex flex-col justify-between overflow-hidden">
+                <div className="relative h-24 sm:h-28 bg-slate-900/90 rounded-xl border border-slate-800 p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden">
                   
-                  {/* Subtle Background Radar Sweep */}
-                  <div className="absolute right-2 bottom-2 w-16 h-16 rounded-full border border-emerald-500/20 pointer-events-none opacity-40">
+                  {/* Background Radar Sweep */}
+                  <div className="absolute right-2 bottom-2 w-14 sm:w-16 h-14 sm:h-16 rounded-full border border-emerald-500/20 pointer-events-none opacity-40">
                     <div className="absolute inset-0 rounded-full border border-emerald-500/20" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full border border-emerald-500/20" />
-                    <div className="absolute top-0 left-1/2 w-0.5 h-8 bg-gradient-to-t from-emerald-400 to-transparent origin-bottom animate-radar" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 sm:w-8 h-6 sm:h-8 rounded-full border border-emerald-500/20" />
+                    <div className="absolute top-0 left-1/2 w-0.5 h-7 sm:h-8 bg-gradient-to-t from-emerald-400 to-transparent origin-bottom animate-radar" />
                   </div>
 
                   {/* Terminal Text Line */}
-                  <div className="space-y-1.5 z-10">
-                    <div className="flex items-center gap-1.5 text-[10px] font-mono text-amber-400/90 font-bold">
+                  <div className="space-y-1 z-10">
+                    <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-amber-400/90 font-bold">
                       <span className="px-1.5 py-0.2 bg-amber-950/80 border border-amber-800 rounded">
                         [{codeLogs[activeCodeLine].tag}]
                       </span>
                       <span className="text-emerald-400">READY</span>
                     </div>
-                    <p className="text-[11px] font-mono text-slate-300 leading-snug line-clamp-2">
+                    <p className="text-[10px] sm:text-[11px] font-mono text-slate-300 leading-snug line-clamp-2">
                       {codeLogs[activeCodeLine].msg}
                     </p>
                   </div>
@@ -649,14 +664,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                     <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse delay-100" />
                     <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse delay-200" />
                     <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse delay-300" />
-                    <span className="text-[9px] font-mono text-slate-500 ml-auto">OCT_14_SYNC_OK</span>
+                    <span className="text-[8px] sm:text-[9px] font-mono text-slate-500 ml-auto">OCT_14_SYNC_OK</span>
                   </div>
 
                 </div>
               </div>
 
               {/* Status indicator */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-3 border-t border-slate-800/80 mt-3">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2.5 border-t border-slate-800/80 mt-2.5">
                 <span className="flex items-center gap-1">
                   <Compass className="h-3 w-3 text-cyan-400" />
                   <span>SYLLABUS COVERAGE</span>
@@ -673,26 +688,29 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         {/* ========================================================================= */}
         {/* FULL-PAGE ASPIRANT QUERY & INTELLIGENCE DESK                              */}
         {/* ========================================================================= */}
-        <section className="bg-slate-900/80 border border-slate-800 rounded-3xl p-5 sm:p-8 shadow-xl backdrop-blur-md space-y-6 relative overflow-hidden">
+        <section 
+          ref={querySectionRef} 
+          className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl backdrop-blur-md space-y-5 sm:space-y-6 relative overflow-hidden"
+        >
           
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800 pb-4 sm:pb-5">
             <div>
               <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-amber-400" />
-                <h2 className="text-base sm:text-lg font-bold text-white">
+                <Brain className="h-4 sm:h-5 w-4 sm:w-5 text-amber-400 shrink-0" />
+                <h2 className="text-sm sm:text-lg font-bold text-white">
                   Aspirant Query & Syllabus Intelligence Desk
                 </h2>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
                 Submit syllabus questions to the AI Coach or register topic requests to be prioritized for the 14 Oct deployment.
               </p>
             </div>
 
-            {/* Mode Switcher Tabs */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0">
+            {/* Mode Switcher Tabs (Touch-Friendly Responsive) */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0 w-full sm:w-auto">
               <button
                 onClick={() => setActiveTab('ai-coach')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                   activeTab === 'ai-coach'
                     ? 'bg-amber-500 text-slate-950 shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -703,7 +721,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
               </button>
               <button
                 onClick={() => setActiveTab('submit-query')}
-                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                   activeTab === 'submit-query'
                     ? 'bg-slate-800 text-white shadow-xs'
                     : 'text-slate-400 hover:text-white'
@@ -717,14 +735,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
           {/* TAB 1: INSTANT AI COACH QUERY BOX */}
           {activeTab === 'ai-coach' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               
-              {/* Suggested Topic Chips */}
-              <div className="space-y-2">
+              {/* Suggested Topic Chips (Horizontal Scrollable on Mobile) */}
+              <div className="space-y-1.5 sm:space-y-2">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                   <Flame className="h-3 w-3 text-amber-500" /> Suggested High-Yield Query Topics:
                 </span>
-                <div className="flex items-center gap-2 flex-wrap">
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 sm:flex-wrap">
                   {presetQueries.map((preset, idx) => (
                     <button
                       key={idx}
@@ -732,7 +750,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                         setAiQuery(preset.text);
                         handleAskAICoach(preset.text);
                       }}
-                      className="text-[11px] font-medium px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer text-left"
+                      className="text-[11px] font-medium px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer whitespace-nowrap sm:whitespace-normal shrink-0 sm:shrink"
                     >
                       {preset.title}
                     </button>
@@ -743,20 +761,20 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
               {/* Input Form Bar */}
               <form 
                 onSubmit={(e) => { e.preventDefault(); handleAskAICoach(); }}
-                className="flex gap-2.5 items-center bg-slate-950 border border-slate-800 p-2 sm:p-2.5 rounded-2xl shadow-inner focus-within:border-amber-500/60 transition"
+                className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center bg-slate-950 border border-slate-800 p-2 sm:p-2.5 rounded-2xl shadow-inner focus-within:border-amber-500/60 transition"
               >
                 <input
                   type="text"
                   value={aiQuery}
                   onChange={(e) => setAiQuery(e.target.value)}
                   placeholder="Ask any GAT topic: e.g. What are the key missile classifications, speeds, and DRDO ranges?"
-                  className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none font-medium"
+                  className="w-full bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none font-medium"
                   disabled={aiLoading}
                 />
                 <button
                   type="submit"
                   disabled={aiLoading || !aiQuery.trim()}
-                  className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer disabled:cursor-not-allowed shrink-0"
+                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer disabled:cursor-not-allowed shrink-0"
                 >
                   {aiLoading ? (
                     <>
@@ -774,11 +792,11 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
               {/* AI Query Result Display */}
               {aiResponse && (
-                <div className="bg-slate-950 border border-slate-800/90 rounded-2xl p-5 sm:p-6 space-y-4 animate-in fade-in duration-300 shadow-xl">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="bg-slate-950 border border-slate-800/90 rounded-2xl p-4 sm:p-6 space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 shadow-xl">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
                     <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                      <span className="text-[11px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider">
                         UPSC NDA GAT Academic Intelligence Brief
                       </span>
                     </div>
@@ -818,15 +836,15 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
           {/* TAB 2: SUBMIT ASPIRANT QUERY / TOPIC REQUEST FORM */}
           {activeTab === 'submit-query' && (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               
               {submittedQuery ? (
-                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-6 text-center space-y-3 animate-in fade-in">
-                  <div className="h-12 w-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="h-6 w-6" />
+                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 text-center space-y-3 animate-in fade-in">
+                  <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="h-5 sm:h-6 w-5 sm:w-6" />
                   </div>
                   <div className="space-y-1">
-                    <h3 className="text-base font-bold text-white">Query Successfully Registered</h3>
+                    <h3 className="text-sm sm:text-base font-bold text-white">Query Successfully Registered</h3>
                     <p className="text-xs text-slate-300 max-w-md mx-auto">
                       Tracking Reference: <strong className="text-emerald-400 font-mono">{submittedQuery.id}</strong>. Our editorial desk will review and integrate this topic into the **14 October 2026** platform deployment.
                     </p>
@@ -839,10 +857,10 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmitQueryForm} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <form onSubmit={handleSubmitQueryForm} className="space-y-3.5 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Aspirant Name *
                       </label>
                       <div className="relative">
@@ -859,7 +877,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Email Address *
                       </label>
                       <div className="relative">
@@ -876,9 +894,9 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Inquiry Category
                       </label>
                       <select
@@ -895,7 +913,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                         Urgency Level
                       </label>
                       <select
@@ -911,12 +929,12 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                    <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
                       Detailed Syllabus Query or Request *
                     </label>
                     <textarea
                       required
-                      rows={4}
+                      rows={3}
                       value={formData.query}
                       onChange={(e) => setFormData({ ...formData, query: e.target.value })}
                       placeholder="Describe the topics, questions, or specific features you would like to see covered upon our full launch on 14 October..."
@@ -952,54 +970,54 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         {/* ========================================================================= */}
         {/* ROADMAP & FEATURE MODULES                                                 */}
         {/* ========================================================================= */}
-        <section className="space-y-4">
+        <section className="space-y-3 sm:space-y-4">
           <div className="text-center space-y-1">
-            <h3 className="text-base sm:text-lg font-bold text-white">
+            <h3 className="text-sm sm:text-lg font-bold text-white">
               Upcoming Modules Releasing 14 October 2026
             </h3>
-            <p className="text-xs text-slate-400 max-w-lg mx-auto">
+            <p className="text-[11px] sm:text-xs text-slate-400 max-w-lg mx-auto">
               Core academic frameworks prepared for UPSC NDA General Ability Test aspirants:
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             
-            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center">
                 <Shield className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-bold text-white">1,000+ Defense Capsules</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="text-xs sm:text-sm font-bold text-white">1,000+ Defense Capsules</h4>
+              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
                 Daily tri-service defense news, bilateral military drills, DRDO missile specifications, and static GK links.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center">
                 <Zap className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-bold text-white">Spaced Repetition Matrix</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="text-xs sm:text-sm font-bold text-white">Spaced Repetition Matrix</h4>
+              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
                 SM-2 algorithm flashcard schedules to ensure zero memory decay for historical treaties and geographical passes.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-xl bg-slate-800 text-cyan-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-cyan-400 flex items-center justify-center">
                 <Award className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-bold text-white">150-Q GAT Full Mocks</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="text-xs sm:text-sm font-bold text-white">150-Q GAT Full Mocks</h4>
+              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
                 Realistic UPSC NDA simulation with negative marking (-0.83), timers, and granular percentile analytics.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-9 w-9 rounded-xl bg-slate-800 text-fuchsia-400 flex items-center justify-center">
+            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
+              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-fuchsia-400 flex items-center justify-center">
                 <Volume2 className="h-4 w-4" />
               </div>
-              <h4 className="text-sm font-bold text-white">Audio Intelligence Briefs</h4>
-              <p className="text-xs text-slate-400 leading-relaxed">
+              <h4 className="text-xs sm:text-sm font-bold text-white">Audio Intelligence Briefs</h4>
+              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
                 Hands-free 3-minute morning intelligence broadcasts to review news during physical training or commute.
               </p>
             </div>
@@ -1012,53 +1030,53 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       {/* ========================================================================= */}
       {/* INSTITUTIONAL COMPREHENSIVE FOOTER WITH COPYRIGHT & PRIVACY LINKS         */}
       {/* ========================================================================= */}
-      <footer className="relative z-10 border-t border-slate-800/90 bg-[#030712] pt-12 pb-8 text-slate-400 font-sans">
+      <footer className="relative z-10 border-t border-slate-800/90 bg-[#030712] pt-8 sm:pt-12 pb-6 sm:pb-8 text-slate-400 font-sans">
         
         {/* Compliance Badges Ribbon */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 border-b border-slate-800/80">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 pb-6 sm:pb-10 border-b border-slate-800/80">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
             
             <button
               onClick={() => setActiveModal('security')}
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
             >
-              <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0 group-hover:scale-110 transition" />
-              <div>
-                <span className="block text-xs font-bold text-white group-hover:text-emerald-300 transition">256-Bit AES Encryption</span>
-                <span className="block text-[10px] text-slate-500 font-mono">End-to-End Data Security</span>
+              <ShieldCheck className="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400 shrink-0 group-hover:scale-110 transition" />
+              <div className="overflow-hidden">
+                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-emerald-300 transition truncate">256-Bit Encryption</span>
+                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">End-to-End Security</span>
               </div>
             </button>
 
             <button
               onClick={() => setActiveModal('privacy')}
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
             >
-              <EyeOff className="h-5 w-5 text-cyan-400 shrink-0 group-hover:scale-110 transition" />
-              <div>
-                <span className="block text-xs font-bold text-white group-hover:text-cyan-300 transition">100% Student Privacy</span>
-                <span className="block text-[10px] text-slate-500 font-mono">Zero Third-Party Trackers</span>
+              <EyeOff className="h-4 sm:h-5 w-4 sm:w-5 text-cyan-400 shrink-0 group-hover:scale-110 transition" />
+              <div className="overflow-hidden">
+                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-cyan-300 transition truncate">100% Student Privacy</span>
+                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">Zero Trackers</span>
               </div>
             </button>
 
             <button
               onClick={() => setActiveModal('copyright')}
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
             >
-              <Copyright className="h-5 w-5 text-amber-400 shrink-0 group-hover:scale-110 transition" />
-              <div>
-                <span className="block text-xs font-bold text-white group-hover:text-amber-300 transition">Copyright & IP Protection</span>
-                <span className="block text-[10px] text-slate-500 font-mono">Educational Fair-Use Charter</span>
+              <Copyright className="h-4 sm:h-5 w-4 sm:w-5 text-amber-400 shrink-0 group-hover:scale-110 transition" />
+              <div className="overflow-hidden">
+                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-amber-300 transition truncate">Copyright & IP</span>
+                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">Fair-Use Charter</span>
               </div>
             </button>
 
             <button
               onClick={() => setActiveModal('telemetry')}
-              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
             >
-              <Server className="h-5 w-5 text-purple-400 shrink-0 group-hover:scale-110 transition" />
-              <div>
-                <span className="block text-xs font-bold text-white group-hover:text-purple-300 transition">99.99% Target SLA Uptime</span>
-                <span className="block text-[10px] text-slate-500 font-mono">High Availability Redundancy</span>
+              <Server className="h-4 sm:h-5 w-4 sm:w-5 text-purple-400 shrink-0 group-hover:scale-110 transition" />
+              <div className="overflow-hidden">
+                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-purple-300 transition truncate">99.99% SLA Uptime</span>
+                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">High Redundancy</span>
               </div>
             </button>
 
@@ -1066,12 +1084,12 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         </div>
 
         {/* 4-Column Navigation & Info Matrix */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8 text-xs">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 text-xs">
           
           {/* Col 1: Brand & Academic Credentials (4 cols) */}
-          <div className="lg:col-span-4 space-y-3.5">
+          <div className="lg:col-span-4 space-y-2.5 sm:space-y-3.5">
             <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-sm">
+              <div className="h-7 sm:h-8 w-7 sm:w-8 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-sm shrink-0">
                 <Shield className="h-4 w-4" />
               </div>
               <span className="font-extrabold text-sm text-white tracking-tight">
@@ -1080,7 +1098,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </div>
             
             <p className="text-slate-400 text-xs leading-relaxed font-normal">
-              Official strategic preparation platform engineered for the UPSC National Defence Academy & Naval Academy Examination (General Ability Test). Built with military-grade precision and verifiable pedagogical standards.
+              Official strategic preparation platform engineered for the UPSC National Defence Academy & Naval Academy Examination (General Ability Test). Built with military-grade precision and pedagogical rigor.
             </p>
 
             <div className="flex items-center gap-2 pt-1">
@@ -1092,40 +1110,40 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
           </div>
 
           {/* Col 2: Core Syllabus Modules (3 cols) */}
-          <div className="lg:col-span-3 space-y-3">
+          <div className="lg:col-span-3 space-y-2 sm:space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-amber-400/90">
               Intelligence Modules
             </h4>
-            <ul className="space-y-2 text-slate-400">
+            <ul className="space-y-1.5 sm:space-y-2 text-slate-400 text-[11px] sm:text-xs">
               <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
                 <span>1,000+ Tri-Service Defense GK</span>
               </li>
               <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
                 <span>SM-2 Spaced Repetition Cache</span>
               </li>
               <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
                 <span>150-Q UPSC NDA Simulation Mocks</span>
               </li>
               <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
                 <span>Audio Intelligence Broadcasts</span>
               </li>
               <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600" />
+                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
                 <span>Missile Telemetry & Command Vault</span>
               </li>
             </ul>
           </div>
 
           {/* Col 3: Legal, Privacy & Copyright Modals (3 cols) */}
-          <div className="lg:col-span-3 space-y-3">
+          <div className="lg:col-span-3 space-y-2 sm:space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-cyan-400/90">
               Legal, Privacy & IP Links
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs">
               <li>
                 <button
                   onClick={() => setActiveModal('copyright')}
@@ -1150,7 +1168,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   className="flex items-center gap-2 text-slate-300 hover:text-emerald-300 transition cursor-pointer text-left font-medium"
                 >
                   <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>Security & 256-Bit Encryption Protocol</span>
+                  <span>Security & Encryption Protocol</span>
                 </button>
               </li>
               <li>
@@ -1159,7 +1177,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                   className="flex items-center gap-2 text-slate-300 hover:text-amber-300 transition cursor-pointer text-left font-medium"
                 >
                   <Scale className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <span>Terms of Service & Cadet Honor Code</span>
+                  <span>Terms of Service & Honor Code</span>
                 </button>
               </li>
               <li>
@@ -1175,25 +1193,25 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
           </div>
 
           {/* Col 4: Version & Build Specification (2 cols) */}
-          <div className="lg:col-span-2 space-y-3">
+          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-emerald-400/90">
               Build Specification
             </h4>
-            <div className="space-y-1.5 font-mono text-[11px] text-slate-400 bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            <div className="space-y-1.5 font-mono text-[10px] sm:text-[11px] text-slate-400 bg-slate-900/60 p-2.5 sm:p-3 rounded-xl border border-slate-800">
               <div>
-                <span className="text-slate-500 block text-[9px] uppercase">VERSION</span>
+                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">VERSION</span>
                 <span className="text-emerald-400 font-bold">v2.4.0-PROD</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[9px] uppercase">BUILD CANDIDATE</span>
+                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">BUILD CANDIDATE</span>
                 <span className="text-slate-300">2026.10.14-RC3</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[9px] uppercase">CIPHER SUITE</span>
-                <span className="text-cyan-300">AES-256-GCM / TLS 1.3</span>
+                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">CIPHER SUITE</span>
+                <span className="text-cyan-300 truncate block">AES-256-GCM</span>
               </div>
               <div>
-                <span className="text-slate-500 block text-[9px] uppercase">TARGET DATE</span>
+                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">TARGET DATE</span>
                 <span className="text-amber-400 font-bold">14 OCT 2026</span>
               </div>
             </div>
@@ -1202,9 +1220,9 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         </div>
 
         {/* Copyright & Direct Clickable Policy Links Bottom Bar */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-6 sm:pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] text-slate-400">
           <div className="space-y-1 text-center md:text-left">
-            <p className="text-slate-300 font-medium">
+            <p className="text-slate-300 font-medium text-xs">
               © 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All Rights Reserved.
             </p>
             <p className="text-[10px] text-slate-500">
@@ -1212,8 +1230,8 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </p>
           </div>
 
-          {/* Clickable Quick Action Legal & Privacy Links */}
-          <div className="flex flex-wrap items-center justify-center gap-3 text-slate-400 font-mono text-[10px]">
+          {/* Quick Clickable Policy Links */}
+          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-slate-400 font-mono text-[10px]">
             <button
               onClick={() => setActiveModal('copyright')}
               className="hover:text-amber-400 underline underline-offset-4 cursor-pointer transition"
@@ -1243,10 +1261,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </button>
             <span>•</span>
             <button
-              onClick={() => {
-                setActiveTab('submit-query');
-                window.scrollTo({ top: 600, behavior: 'smooth' });
-              }}
+              onClick={() => scrollToQuery('submit-query')}
               className="text-amber-400 font-bold hover:text-amber-300 underline underline-offset-4 cursor-pointer transition"
             >
               Desk Inquiry
@@ -1257,64 +1272,106 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       </footer>
 
       {/* ========================================================================= */}
-      {/* INTERACTIVE MODALS FOR COPYRIGHT, PRIVACY, SECURITY, TERMS, TELEMETRY     */}
+      {/* MOBILE BOTTOM FLOATING QUICK-ACTION BAR                                   */}
+      {/* ========================================================================= */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800 backdrop-blur-lg px-3 py-2 flex items-center justify-around text-[10px] font-bold shadow-2xl">
+        <button
+          onClick={() => scrollToQuery('ai-coach')}
+          className="flex flex-col items-center gap-1 text-amber-400 cursor-pointer"
+        >
+          <Zap className="h-4 w-4" />
+          <span>AI Coach</span>
+        </button>
+        <button
+          onClick={() => scrollToQuery('submit-query')}
+          className="flex flex-col items-center gap-1 text-slate-300 hover:text-white cursor-pointer"
+        >
+          <FileText className="h-4 w-4" />
+          <span>Ask Desk</span>
+        </button>
+        <button
+          onClick={handleToggleTurbo}
+          className={`flex flex-col items-center gap-1 ${isTurbo ? 'text-amber-400 font-extrabold' : 'text-slate-400'} cursor-pointer`}
+        >
+          <Activity className="h-4 w-4" />
+          <span>{isTurbo ? 'Turbo ON' : 'Overclock'}</span>
+        </button>
+        <button
+          onClick={() => setActiveModal('privacy')}
+          className="flex flex-col items-center gap-1 text-slate-300 hover:text-cyan-400 cursor-pointer"
+        >
+          <Lock className="h-4 w-4" />
+          <span>Privacy</span>
+        </button>
+        <button
+          onClick={() => setActiveModal('copyright')}
+          className="flex flex-col items-center gap-1 text-slate-300 hover:text-amber-400 cursor-pointer"
+        >
+          <Copyright className="h-4 w-4" />
+          <span>Copyright</span>
+        </button>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* INTERACTIVE RESPONSIVE MODALS (MOBILE SLIDE-UP + DESKTOP CENTERED DIALOG) */}
       {/* ========================================================================= */}
       {activeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-slate-700 rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200">
             
             {/* Modal Header */}
-            <div className="px-6 py-4.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-              <div className="flex items-center gap-2.5">
-                {activeModal === 'copyright' && <Copyright className="h-5 w-5 text-amber-400" />}
-                {activeModal === 'privacy' && <Lock className="h-5 w-5 text-cyan-400" />}
-                {activeModal === 'security' && <ShieldCheck className="h-5 w-5 text-emerald-400" />}
-                {activeModal === 'terms' && <Scale className="h-5 w-5 text-amber-400" />}
-                {activeModal === 'telemetry' && <Activity className="h-5 w-5 text-purple-400" />}
+            <div className="px-5 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 sticky top-0 z-10">
+              <div className="flex items-center gap-2.5 overflow-hidden">
+                {activeModal === 'copyright' && <Copyright className="h-5 w-5 text-amber-400 shrink-0" />}
+                {activeModal === 'privacy' && <Lock className="h-5 w-5 text-cyan-400 shrink-0" />}
+                {activeModal === 'security' && <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />}
+                {activeModal === 'terms' && <Scale className="h-5 w-5 text-amber-400 shrink-0" />}
+                {activeModal === 'telemetry' && <Activity className="h-5 w-5 text-purple-400 shrink-0" />}
                 
-                <h3 className="text-base font-bold text-white">
-                  {activeModal === 'copyright' && 'Copyright & Intellectual Property Protection Notice'}
-                  {activeModal === 'privacy' && '100% Student Privacy Policy & Data Charter'}
-                  {activeModal === 'security' && 'Security Architecture & 256-Bit Encryption Protocol'}
+                <h3 className="text-xs sm:text-base font-bold text-white truncate">
+                  {activeModal === 'copyright' && 'Copyright & Intellectual Property Notice'}
+                  {activeModal === 'privacy' && '100% Student Privacy Policy & Charter'}
+                  {activeModal === 'security' && 'Security Architecture & Encryption Protocol'}
                   {activeModal === 'terms' && 'Terms of Service & Academic Honor Code'}
-                  {activeModal === 'telemetry' && 'System Architecture, Version & SLA Metrics'}
+                  {activeModal === 'telemetry' && 'System Architecture & SLA Metrics'}
                 </h3>
               </div>
 
               <button
                 onClick={() => setActiveModal(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer"
+                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
+                aria-label="Close modal"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             {/* Modal Body Content */}
-            <div className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
+            <div className="p-5 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
               
               {/* COPYRIGHT & IP CONTENT */}
               {activeModal === 'copyright' && (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
                     <strong>Intellectual Property & Copyright Statement:</strong> © 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All educational methodologies, curated flashcards, algorithmic mock simulations, and interface assets are protected under the Indian Copyright Act (1957) and international intellectual property conventions (WIPO / Berne Convention).
                   </div>
 
-                  <h4 className="font-bold text-white text-sm">1. Scope of Protected Material</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Scope of Protected Material</h4>
                   <p>
                     All original test question banks, diagnostic grading rubrics, tri-service defense summary capsules, spaced repetition memory schedules, and software logic generated by this platform are the exclusive intellectual property of the editorial and engineering team.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">2. Educational Fair-Use Authorization</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">2. Educational Fair-Use Authorization</h4>
                   <p>
                     Enrolled defense aspirants and cadets are granted a non-exclusive, non-transferable, personal license to view, study, attempt, and save question sets for individual self-study and examination preparation.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">3. Commercial Redistribution Prohibitions</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">3. Commercial Redistribution Prohibitions</h4>
                   <p>
                     Any unauthorized commercial reproduction, mass scraping, data mining, republishing, or sale of mock tests, questions, or proprietary editorial briefs without express written consent is strictly prohibited and subject to legal enforcement.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">4. Public Domain & Government Attributions</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">4. Public Domain & Government Attributions</h4>
                   <p>
                     Factual information concerning national defense news, bilateral military exercises, DRDO missile specifications, and governmental communiques are derived from official public domain releases (PIB, Ministry of Defence, ISRO) under Open Government Data principles.
                   </p>
@@ -1323,22 +1380,22 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
               {/* PRIVACY POLICY CONTENT */}
               {activeModal === 'privacy' && (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs">
                     <strong>100% Student Data Protection Guarantee:</strong> We do NOT sell, rent, monetize, or transmit any aspirant personal data, mock exam attempts, or learning telemetry to third parties.
                   </div>
 
-                  <h4 className="font-bold text-white text-sm">1. Data Collection & Usage</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Data Collection & Usage</h4>
                   <p>
                     We collect only essential credentials (student name, email, target exam year) required to maintain synchronized bookmarks, spaced revision flashcards, and personalized diagnostic test performance.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">2. Zero Third-Party Advertising & Trackers</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">2. Zero Third-Party Advertising & Trackers</h4>
                   <p>
                     This platform contains zero third-party commercial advertising networks, zero data brokers, and zero behavioral telemetry SDKs. The study environment is 100% focused on academic excellence.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">3. DPDP Act 2023 & GDPR Compliance</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">3. DPDP Act 2023 & GDPR Compliance</h4>
                   <p>
                     In full accordance with the Digital Personal Data Protection (DPDP) Act of 2023 and global privacy frameworks, you retain complete rights to inspect, export, or permanently delete your learning records and quiz scores at any time from the account settings.
                   </p>
@@ -1347,22 +1404,22 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
               {/* SECURITY CONTENT */}
               {activeModal === 'security' && (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs">
                     <strong>Enterprise Military-Grade Security:</strong> All user records, quiz histories, and editorial notes are secured with 256-Bit Advanced Encryption Standard (AES) at rest and Transport Layer Security (TLS 1.3) in transit.
                   </div>
 
-                  <h4 className="font-bold text-white text-sm">1. Database Security & Granular RBAC</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Database Security & Granular RBAC</h4>
                   <p>
                     User data is partitioned through strict Firestore Security Rules. Aspirants can only read and write their own quiz attempts, bookmarks, and revision items. Editorial and admin actions are strictly locked to authorized credentials.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">2. AI Request Sanitization & Rate-Limiting</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">2. AI Request Sanitization & Rate-Limiting</h4>
                   <p>
                     All queries submitted to the GAT AI Coach Assistant are scrubbed and verified against rate limits to prevent prompt injection and unauthorized denial of service attacks.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">3. Continuous Vulnerability Auditing</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">3. Continuous Vulnerability Auditing</h4>
                   <p>
                     Our dependencies and API bridges undergo continuous automated vulnerability scanning and adhere to OWASP Top 10 security standards.
                   </p>
@@ -1371,22 +1428,22 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
               {/* TERMS OF SERVICE */}
               {activeModal === 'terms' && (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
                     <strong>Academic Integrity & Fair Use:</strong> This application is an educational aid designed solely to support defense aspirants preparing for the UPSC NDA & NA General Ability Test.
                   </div>
 
-                  <h4 className="font-bold text-white text-sm">1. Educational License & Scope</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Educational License & Scope</h4>
                   <p>
                     All practice questions, defense cheatsheets, and spaced repetition notes are curated for individual student study. Unauthorized bulk scraping or redistribution of the question bank is prohibited.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">2. Examination Disclaimer</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">2. Examination Disclaimer</h4>
                   <p>
                     UPSC (Union Public Service Commission) is an independent constitutional authority. This portal is an educational study tool and is not officially affiliated with or endorsed by the Union Public Service Commission.
                   </p>
 
-                  <h4 className="font-bold text-white text-sm">3. Aspirant Honor Code</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">3. Aspirant Honor Code</h4>
                   <p>
                     Cadets and students are encouraged to uphold the highest standards of integrity, discipline, and honest self-assessment during mock examination attempts.
                   </p>
@@ -1395,31 +1452,31 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
               {/* SYSTEM TELEMETRY */}
               {activeModal === 'telemetry' && (
-                <div className="space-y-4">
-                  <div className="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-200 text-xs">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="p-3 sm:p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-200 text-xs">
                     <strong>Deployment Architecture Specifications:</strong> High-availability cloud infrastructure optimized for low-latency delivery across pan-India networks.
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 font-mono text-xs">
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[10px]">CURRENT RELEASE</span>
-                      <span className="text-white font-bold">v2.4.0-PROD_CANDIDATE</span>
+                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 font-mono text-[10px] sm:text-xs">
+                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">CURRENT RELEASE</span>
+                      <span className="text-white font-bold truncate block">v2.4.0-PROD</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[10px]">TARGET LAUNCH</span>
-                      <span className="text-amber-400 font-bold">14 October 2026</span>
+                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">TARGET LAUNCH</span>
+                      <span className="text-amber-400 font-bold truncate block">14 Oct 2026</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[10px]">UPTIME SLA</span>
-                      <span className="text-emerald-400 font-bold">99.99% Availability</span>
+                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">UPTIME SLA</span>
+                      <span className="text-emerald-400 font-bold truncate block">99.99% Availability</span>
                     </div>
-                    <div className="bg-slate-950 p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[10px]">MEDIAN API LATENCY</span>
-                      <span className="text-cyan-400 font-bold">&lt; 14ms (CDN Edge)</span>
+                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
+                      <span className="text-slate-500 block text-[9px]">MEDIAN LATENCY</span>
+                      <span className="text-cyan-400 font-bold truncate block">&lt; 14ms (Edge)</span>
                     </div>
                   </div>
 
-                  <h4 className="font-bold text-white text-sm">Multi-Tier Failover Mechanism</h4>
+                  <h4 className="font-bold text-white text-xs sm:text-sm">Multi-Tier Failover Mechanism</h4>
                   <p>
                     The AI Coach and quiz engines are configured with multi-tier automated cascade failover to ensure zero downtime even during upstream network reconfigurations.
                   </p>
@@ -1429,10 +1486,10 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 border-t border-slate-800 bg-slate-950/60 flex justify-end">
+            <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-slate-800 bg-slate-950/70 flex justify-end">
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer text-center"
               >
                 Close Specification
               </button>
