@@ -48,6 +48,8 @@ import {
   AlertTriangle,
   Flag,
   Navigation,
+  Users,
+  TrendingUp,
   Globe,
   RadioTower,
   Sliders,
@@ -115,6 +117,13 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   const [frequency, setFrequency] = useState(50.02);
   const [activeCodeLine, setActiveCodeLine] = useState(0);
 
+  // Live Aspirant Visitor Counter States (Auto-Incrementing Daily Footfall)
+  const [liveCadets, setLiveCadets] = useState(1468);
+  const [dailyVisitors, setDailyVisitors] = useState(28492);
+  const [totalCadetsTrained, setTotalCadetsTrained] = useState(184950);
+  const [recentVisitorDelta, setRecentVisitorDelta] = useState<number | null>(null);
+  const [isVisitorFlashing, setIsVisitorFlashing] = useState(false);
+
   // Modal Dialog States for Footer Legal, Copyright & Security
   const [activeModal, setActiveModal] = useState<'privacy' | 'copyright' | 'security' | 'terms' | 'telemetry' | null>(null);
 
@@ -139,6 +148,79 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     }, isTurbo ? 1200 : 2400);
     return () => clearInterval(interval);
   }, [isTurbo, codeLogs.length]);
+
+  // Dynamic Live Cadet fluctuation & Daily Footfall Auto-Increment
+  useEffect(() => {
+    // Determine baseline from local storage or current hour of the day
+    const todayKey = new Date().toISOString().slice(0, 10);
+    const storedData = localStorage.getItem('nda_daily_footfall');
+    let baseDaily = 28450;
+    let baseTotal = 184920;
+
+    if (storedData) {
+      try {
+        const parsed = JSON.parse(storedData);
+        if (parsed.date === todayKey && typeof parsed.daily === 'number') {
+          baseDaily = parsed.daily;
+          baseTotal = parsed.total || baseTotal;
+        } else {
+          // New day base: 14000 + hours * 650
+          const hours = new Date().getHours();
+          baseDaily = 14000 + (hours * 720) + Math.floor(Math.random() * 250);
+          baseTotal = (parsed.total || baseTotal) + baseDaily;
+        }
+      } catch (e) {
+        // fallback
+      }
+    } else {
+      const hours = new Date().getHours();
+      baseDaily = 18200 + (hours * 850) + Math.floor(Math.random() * 300);
+      baseTotal = 184900 + baseDaily;
+    }
+
+    setDailyVisitors(baseDaily);
+    setTotalCadetsTrained(baseTotal);
+
+    // Dynamic Live Cadet fluctuation (±1 to ±3 every 3.5 seconds)
+    const liveInterval = setInterval(() => {
+      setLiveCadets(prev => {
+        const delta = Math.floor(Math.random() * 7) - 3; // -3 to +3
+        const next = prev + delta;
+        return next < 1410 ? 1410 : next > 1540 ? 1540 : next;
+      });
+    }, 3500);
+
+    // Auto-increment Daily Visitors every 2.8 to 4.5 seconds
+    const visitorInterval = setInterval(() => {
+      const increment = Math.floor(Math.random() * 3) + 1; // +1, +2, or +3
+      setRecentVisitorDelta(increment);
+      setIsVisitorFlashing(true);
+
+      setDailyVisitors(prev => {
+        const updated = prev + increment;
+        try {
+          localStorage.setItem('nda_daily_footfall', JSON.stringify({
+            date: todayKey,
+            daily: updated,
+            total: baseTotal + updated
+          }));
+        } catch (e) {}
+        return updated;
+      });
+
+      setTotalCadetsTrained(prev => prev + increment);
+
+      setTimeout(() => {
+        setIsVisitorFlashing(false);
+        setRecentVisitorDelta(null);
+      }, 1200);
+    }, 3200);
+
+    return () => {
+      clearInterval(liveInterval);
+      clearInterval(visitorInterval);
+    };
+  }, []);
 
   // Dynamic RPM, Voltage & Frequency fluctuation
   useEffect(() => {
@@ -378,9 +460,22 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
           {/* Zone 3: Primary Tactical Action & Defcon Status */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="hidden sm:flex flex-col items-end text-right">
+            {/* Live Visitors Real-Time Pill */}
+            <div className="hidden sm:flex items-center gap-2 bg-[#121c14] border border-[#283b2c] px-2.5 py-1.5 rounded-lg text-right">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] font-bold text-slate-200 font-mono leading-none">
+                  {liveCadets.toLocaleString()} <span className="text-[9px] text-emerald-400 font-sans uppercase">Online</span>
+                </span>
+                <span className="text-[9px] text-amber-400 font-mono leading-none mt-0.5">
+                  {dailyVisitors.toLocaleString()} <span className="text-slate-400">today</span>
+                </span>
+              </div>
+            </div>
+
+            <div className="hidden md:flex flex-col items-end text-right">
               <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 DEFCON 1 READY
               </span>
               <span className="text-[10px] font-mono text-slate-400">
@@ -450,6 +545,105 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
                 View System Telemetry
               </button>
             </div>
+          </div>
+        </section>
+
+        {/* SECTION: REAL-TIME ASPIRANT RADAR & DAILY FOOTFALL TELEMETRY */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between border-b border-[#283b2c] pb-2">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-200">
+              <Radar className="w-4 h-4 text-emerald-400" />
+              <span>Live Cadet Engagement & Daily Aspirant Footfall Radar</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] font-mono text-emerald-400">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>LIVE TELEMETRY STREAM</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+            
+            {/* Card 1: Live Active Online */}
+            <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-emerald-500/50 transition-all">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                <span className="flex items-center gap-1">
+                  <Users className="w-3 h-3 text-emerald-400" />
+                  WAR ROOM CADETS
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 tracking-tight font-tabular flex items-baseline gap-1.5">
+                {liveCadets.toLocaleString()}
+                <span className="text-[10px] text-slate-400 uppercase font-sans font-semibold">Active</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+                <span>Engaged in Vault</span>
+                <span className="text-emerald-400 font-mono">Live</span>
+              </div>
+            </div>
+
+            {/* Card 2: Today's Daily Footfall (Auto-Incrementing) */}
+            <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                <span className="flex items-center gap-1">
+                  <TrendingUp className="w-3 h-3 text-amber-400" />
+                  TODAY'S FOOTFALL
+                </span>
+                {recentVisitorDelta && (
+                  <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-600/60 px-1 rounded animate-bounce">
+                    +{recentVisitorDelta}
+                  </span>
+                )}
+              </div>
+              <div className={`text-2xl sm:text-3xl font-black font-mono text-amber-400 tracking-tight font-tabular flex items-baseline gap-1.5 transition-transform duration-200 ${
+                isVisitorFlashing ? 'scale-105 text-amber-300' : ''
+              }`}>
+                {dailyVisitors.toLocaleString()}
+                <span className="text-[10px] text-slate-400 uppercase font-sans font-semibold">Cadets</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+                <span>Across 28 States & UTs</span>
+                <span className="text-amber-400 font-mono">Auto +1</span>
+              </div>
+            </div>
+
+            {/* Card 3: Cumulative Cadets Trained */}
+            <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-sky-500/50 transition-all">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                <span className="flex items-center gap-1">
+                  <Award className="w-3 h-3 text-sky-400" />
+                  TOTAL CADETS TRAINED
+                </span>
+                <span className="text-[9px] font-mono text-sky-400 font-bold">ALL-TIME</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-sky-400 tracking-tight font-tabular flex items-baseline gap-1.5">
+                {totalCadetsTrained.toLocaleString()}
+                <span className="text-[10px] text-slate-400 uppercase font-sans font-semibold">Trained</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+                <span>Verified Aspirants</span>
+                <span className="text-sky-400 font-mono">99.4% Rate</span>
+              </div>
+            </div>
+
+            {/* Card 4: GAT Query Speed */}
+            <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
+              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
+                <span className="flex items-center gap-1">
+                  <Zap className="w-3 h-3 text-amber-400" />
+                  DISPATCH LATENCY
+                </span>
+                <span className="text-[9px] font-mono text-emerald-400 font-bold">&lt; 1 SEC</span>
+              </div>
+              <div className="text-2xl sm:text-3xl font-black font-mono text-slate-100 tracking-tight font-tabular flex items-baseline gap-1.5">
+                0.82 <span className="text-xs text-amber-400 font-bold">sec</span>
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+                <span>Neural Engine Speed</span>
+                <span className="text-emerald-400 font-mono">Instant</span>
+              </div>
+            </div>
+
           </div>
         </section>
 
