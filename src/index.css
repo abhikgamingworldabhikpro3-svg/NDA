@@ -2,15 +2,38 @@
 
 @layer base {
   body {
-    @apply antialiased text-slate-100 bg-[#060a14] selection:bg-amber-500 selection:text-black;
+    @apply antialiased text-slate-100 bg-[#0a0f0b] selection:bg-amber-500 selection:text-black;
     -webkit-tap-highlight-color: transparent;
   }
 }
 
-/* Crisp Institutional Chronometer styling */
+/* Crisp Institutional & Military Chronometer styling */
 .font-tabular {
   font-feature-settings: "tnum";
   font-variant-numeric: tabular-nums;
+}
+
+/* Tactical Camo & Military Grid Patterns */
+.bg-tactical-grid {
+  background-image: 
+    linear-gradient(to right, rgba(60, 86, 65, 0.1) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(60, 86, 65, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-tactical-dots {
+  background-image: radial-gradient(rgba(212, 175, 55, 0.15) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
+
+.bg-camo-stripe {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(28, 40, 30, 0.4),
+    rgba(28, 40, 30, 0.4) 10px,
+    rgba(21, 30, 23, 0.4) 10px,
+    rgba(21, 30, 23, 0.4) 20px
+  );
 }
 
 /* Custom Generator & Lab Animations */
@@ -47,19 +70,19 @@
 
 @keyframes bulb-glow-pulse {
   0%, 100% {
-    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.45)) drop-shadow(0 0 30px rgba(245, 158, 11, 0.2));
+    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.45)) drop-shadow(0 0 30px rgba(212, 175, 55, 0.2));
   }
   50% {
-    filter: drop-shadow(0 0 22px rgba(245, 158, 11, 0.75)) drop-shadow(0 0 50px rgba(245, 158, 11, 0.35));
+    filter: drop-shadow(0 0 22px rgba(212, 175, 55, 0.75)) drop-shadow(0 0 50px rgba(212, 175, 55, 0.35));
   }
 }
 
 @keyframes bulb-glow-turbo {
   0%, 100% {
-    filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.85)) drop-shadow(0 0 55px rgba(245, 158, 11, 0.6));
+    filter: drop-shadow(0 0 20px rgba(245, 158, 11, 0.85)) drop-shadow(0 0 55px rgba(212, 175, 55, 0.6));
   }
   50% {
-    filter: drop-shadow(0 0 35px rgba(251, 191, 36, 1)) drop-shadow(0 0 80px rgba(245, 158, 11, 0.8));
+    filter: drop-shadow(0 0 35px rgba(245, 158, 11, 1)) drop-shadow(0 0 80px rgba(212, 175, 55, 0.8));
   }
 }
 

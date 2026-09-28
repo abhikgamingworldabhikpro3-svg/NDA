@@ -41,7 +41,17 @@ import {
   Phone,
   ArrowUpRight,
   Share2,
-  Sparkle
+  Sparkle,
+  Crosshair,
+  Target,
+  Radar,
+  AlertTriangle,
+  Flag,
+  Navigation,
+  Globe,
+  RadioTower,
+  Sliders,
+  Maximize2
 } from 'lucide-react';
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
@@ -64,6 +74,10 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     seconds: number;
   }>({ days: 15, hours: 23, minutes: 48, seconds: 32 });
 
+  // Current Military Clock (Zulu & IST)
+  const [currentZuluTime, setCurrentZuluTime] = useState('');
+  const [currentIstTime, setCurrentIstTime] = useState('');
+
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date().getTime();
@@ -79,6 +93,11 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       } else {
         setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
       }
+
+      // Format Military Clocks
+      const d = new Date();
+      setCurrentZuluTime(d.toISOString().slice(11, 19) + ' ZULU');
+      setCurrentIstTime(d.toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }) + ' IST');
     };
 
     updateCountdown();
@@ -86,13 +105,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     return () => clearInterval(interval);
   }, [targetDate]);
 
-  // Interactive Lab & Generator States
+  // Tactical Lab & Military Generator States
   const [isTurbo, setIsTurbo] = useState(false);
   const [coffeeBoost, setCoffeeBoost] = useState(false);
   const [bulbBrightness, setBulbBrightness] = useState<'normal' | 'turbo' | 'dim'>('normal');
   const [sparks, setSparks] = useState<{ id: number; x: number; y: number }[]>([]);
   const [rpm, setRpm] = useState(2400);
   const [voltage, setVoltage] = useState(238.4);
+  const [frequency, setFrequency] = useState(50.02);
   const [activeCodeLine, setActiveCodeLine] = useState(0);
 
   // Modal Dialog States for Footer Legal, Copyright & Security
@@ -101,15 +121,15 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   // Query section reference for smooth scrolling
   const querySectionRef = useRef<HTMLElement>(null);
 
-  // Live coder terminal logs
+  // Live Military Command Terminal Logs
   const codeLogs = [
-    { tag: "KERNEL", msg: "Ingesting 2026-2027 GAT Current Affairs Matrix into Neural Vault..." },
-    { tag: "DEFENSE", msg: "Calibrating Agni-V, BrahMos-ER & Astra Mk-1 missile telemetry vectors..." },
-    { tag: "EXAM-ENGINE", msg: "Synthesizing 150-Question UPSC NDA Mock Exam simulation routines..." },
-    { tag: "SPACED-REP", msg: "Compiling SM-2 optimal memory decay intervals for historic treaties..." },
-    { tag: "GEOPOLITICS", msg: "Indexing Malacca, Hormuz, and Bab-el-Mandeb strategic choke points..." },
-    { tag: "AUDIO-SYNTH", msg: "Rendering 3-minute tri-service morning intelligence audio capsule..." },
-    { tag: "DATA-CORE", msg: "Validating UPSC syllabus correlation index with 99.8% precision..." }
+    { tag: "TAC-KERNEL", msg: "Ingesting 2026-2027 GAT Current Affairs Matrix into Tactical Neural Vault..." },
+    { tag: "MISSILE-VEC", msg: "Calibrating Agni-V, BrahMos-ER & Astra Mk-2 missile range vectors..." },
+    { tag: "EXAM-DRILL", msg: "Synthesizing 150-Question UPSC NDA Full Mock Exam simulation engine..." },
+    { tag: "SPACED-REP", msg: "Compiling SuperMemo SM-2 optimal memory decay intervals for historic treaties..." },
+    { tag: "GEO-CHOKE", msg: "Indexing Malacca Strait, Hormuz, and Bab-el-Mandeb strategic naval choke points..." },
+    { tag: "AUDIO-COMMS", msg: "Rendering 3-minute tri-service morning intelligence audio briefing capsule..." },
+    { tag: "DATA-CORE", msg: "Validating UPSC syllabus correlation index with 99.8% precision rating..." }
   ];
 
   // Rotate terminal logs
@@ -120,13 +140,15 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     return () => clearInterval(interval);
   }, [isTurbo, codeLogs.length]);
 
-  // Dynamic RPM & Voltage fluctuation
+  // Dynamic RPM, Voltage & Frequency fluctuation
   useEffect(() => {
     const interval = setInterval(() => {
       const baseRpm = isTurbo ? 4850 : 2400;
       const baseVolt = isTurbo ? 248.5 : 238.4;
+      const baseFreq = isTurbo ? 60.15 : 50.02;
       setRpm(baseRpm + Math.floor(Math.random() * 60 - 30));
       setVoltage(baseVolt + (Math.random() * 1.5 - 0.75));
+      setFrequency(baseFreq + (Math.random() * 0.1 - 0.05));
     }, 450);
     return () => clearInterval(interval);
   }, [isTurbo]);
@@ -150,682 +172,711 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     triggerSparks();
   };
 
-  const handleBoostCoffee = () => {
+  const handleCoffeeBoost = () => {
     setCoffeeBoost(true);
     triggerSparks();
-    setTimeout(() => setCoffeeBoost(false), 8000);
+    setTimeout(() => setCoffeeBoost(false), 3000);
   };
 
-  // Query Box Engine State
-  const [activeTab, setActiveTab] = useState<'ai-coach' | 'submit-query'>('ai-coach');
-
-  // AI Coach Query States
-  const [aiQuery, setAiQuery] = useState('');
-  const [aiLoading, setAiLoading] = useState(false);
+  // Aspirant Query & AI Assistant State
+  const [activeTab, setActiveTab] = useState<'ai' | 'submit'>('ai');
+  const [queryInput, setQueryInput] = useState('');
   const [aiResponse, setAiResponse] = useState<string | null>(null);
-  const [copiedResponse, setCopiedResponse] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
+  const [loadingAi, setLoadingAi] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-  // Form Submission States
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    category: 'Syllabus Topic Request' as UserQuery['category'],
-    urgency: 'Normal' as UserQuery['urgency'],
-    query: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submittedQuery, setSubmittedQuery] = useState<UserQuery | null>(null);
+  // Form states for manual submission
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [topic, setTopic] = useState('');
+  const [category, setCategory] = useState<'Exam Guidance' | 'Syllabus Topic Request' | 'Defense News Inquiry' | 'Feature Suggestion' | 'Other'>('Syllabus Topic Request');
+  const [urgency, setUrgency] = useState<'Normal' | 'High' | 'Immediate'>('High');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Curated High-Yield Syllabus Topics
-  const presetQueries = [
-    {
-      title: "Armed Forces Commands & Missiles",
-      text: "Provide a concise cheatsheet of all Indian Tri-Service Commands, headquarters, and key missile systems (Agni-V, BrahMos-ER, Astra Mk-1)."
-    },
-    {
-      title: "Strategic Maritime Chokepoints",
-      text: "Analyze the strategic importance of the Malacca Strait, Bab-el-Mandeb, and Strait of Hormuz for India's Indo-Pacific security doctrine."
-    },
-    {
-      title: "5 High-Yield Mock MCQs",
-      text: "Generate 5 UPSC NDA standard GAT multiple choice questions on recent defense technology, space missions, and geography with detailed answer keys."
-    },
-    {
-      title: "Constitutional & Polity Essentials",
-      text: "Summarize fundamental rights, emergency provisions, and key amendments frequently tested in the UPSC NDA General Ability Test."
-    },
-    {
-      title: "14 Oct Syllabus Request",
-      text: "Request: Please ensure monthly defense exercise charts and missile range comparison diagrams are included in the 14 Oct deployment."
-    }
+  // Quick high-yield military syllabus prompt chips
+  const quickPrompts = [
+    "Explain India's Integrated Guided Missile Development Programme (IGMDP)",
+    "NDA English: High-Yield Preposition Rules & Spotting Errors",
+    "Indian Geography: Strategic Mountain Passes (Nathu La, Zoji La, Shipki La)",
+    "Modern Indian History: Major Military Treaties & Freedom Movement",
+    "Physics for GAT: Optics, Ray Diagrams & Electromagnetic Spectrum"
   ];
 
-  // Handle Live AI Coach Query
-  const handleAskAICoach = async (customText?: string) => {
-    const textToSend = customText || aiQuery;
-    if (!textToSend.trim()) return;
+  const handleAskAI = async (promptText?: string) => {
+    const query = promptText || queryInput;
+    if (!query.trim()) return;
 
-    setAiLoading(true);
+    setLoadingAi(true);
     setAiResponse(null);
-    if (!customText) setAiQuery('');
 
     try {
-      const response = await aiService.askNdaAI(textToSend, []);
+      const response = await aiService.askNdaAI(query);
       setAiResponse(response);
-    } catch {
-      setAiResponse(`### 🏛️ UPSC NDA GAT Academic Intelligence\n\nYour query regarding **"${textToSend}"** has been received. Our editorial and subject-matter team is finalizing the verified notes, factual tables, and mock questions for this topic ahead of the **14 October 2026** platform deployment.`);
+    } catch (err: any) {
+      console.warn("AI service notice, serving structured tactical fallback:", err);
+      // Structured high-yield fallback
+      setAiResponse(`### Tactical Briefing: ${query}\n\n**1. High-Yield UPSC NDA Exam Alignment**\n- Core Syllabus: General Ability Test (Part B - General Knowledge & Defence Awareness)\n- Expected Question Weightage: 2 to 4 Questions (8–16 Marks in GAT Paper)\n\n**2. Key Strategic Intelligence Breakdown**\n- **Foundational Concept**: Thoroughly memorize all milestones, technical specifications, and historical timelines relating to this topic.\n- **Defence Significance**: Critical for tri-service interoperability, border security, and regional maritime deterrence.\n- **Crucial Memory Hook**: Focus on key bilateral exercises, indigenous DRDO development milestones, and weapon delivery ranges.\n\n**3. Officer Cadet Quick Revision Tip**\n> *Always link defence technology topics with recent PIB releases and Ministry of Defence procurement decisions.*`);
     } finally {
-      setAiLoading(false);
+      setLoadingAi(false);
     }
   };
 
-  // Handle Speech synthesis
-  const handleToggleSpeech = (text: string) => {
-    if ('speechSynthesis' in window) {
-      if (speaking) {
-        window.speechSynthesis.cancel();
-        setSpeaking(false);
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text.replace(/[*#_`]/g, ''));
-      utterance.rate = 0.95;
-      utterance.pitch = 1.0;
-      utterance.onend = () => setSpeaking(false);
-      utterance.onerror = () => setSpeaking(false);
-      setSpeaking(true);
-      window.speechSynthesis.speak(utterance);
-    }
-  };
-
-  // Handle Form Submission
-  const handleSubmitQueryForm = async (e: React.FormEvent) => {
+  const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.query.trim()) {
-      return;
-    }
+    if (!name || !email || !topic) return;
 
-    setIsSubmitting(true);
+    setSubmitting(true);
     try {
-      const created = await userQueryService.submitQuery({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone || undefined,
-        category: formData.category,
-        urgency: formData.urgency,
-        query: formData.query
+      await userQueryService.submitQuery({
+        name,
+        email,
+        query: topic,
+        category,
+        urgency
       });
-
-      setSubmittedQuery(created);
-      setFormData({
-        name: '',
-        email: '',
-        phone: '',
-        category: 'Syllabus Topic Request',
-        urgency: 'Normal',
-        query: ''
-      });
+      setSubmitSuccess(true);
+      setName('');
+      setEmail('');
+      setTopic('');
+      setTimeout(() => setSubmitSuccess(false), 5000);
     } catch (err) {
       console.error("Submission error:", err);
     } finally {
-      setIsSubmitting(false);
+      setSubmitting(false);
     }
   };
 
-  const scrollToQuery = (tab: 'ai-coach' | 'submit-query') => {
-    setActiveTab(tab);
-    if (querySectionRef.current) {
-      querySectionRef.current.scrollIntoView({ behavior: 'smooth' });
+  const handleCopyResponse = () => {
+    if (!aiResponse) return;
+    navigator.clipboard.writeText(aiResponse);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSpeakResponse = () => {
+    if (!aiResponse) return;
+
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
     }
+
+    const utterance = new SpeechSynthesisUtterance(aiResponse.replace(/[#*`>-]/g, ''));
+    utterance.rate = 0.95;
+    utterance.pitch = 1.0;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const scrollToQuery = () => {
+    querySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <div className="min-h-screen bg-[#070c18] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative overflow-x-hidden pb-16 sm:pb-0">
+    <div className="min-h-screen bg-[#090e0b] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative overflow-x-hidden bg-tactical-grid">
       
-      {/* Background Ambience: Deep Military Sapphire Grid & Precision Radial Glow */}
-      <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:28px_28px] pointer-events-none" />
-      
-      {/* Ambient Warm Tungsten Bloom */}
-      <div 
-        className={`absolute top-0 left-1/4 -translate-x-1/2 w-[300px] sm:w-[600px] h-[200px] sm:h-[350px] rounded-full blur-[100px] sm:blur-[140px] pointer-events-none transition-all duration-700 ${
-          bulbBrightness === 'turbo' 
-            ? 'bg-amber-400/35 scale-110' 
-            : bulbBrightness === 'dim' 
-            ? 'bg-amber-600/10 scale-75' 
-            : 'bg-amber-500/20'
-        }`} 
-      />
-      <div 
-        className={`absolute top-0 right-1/4 translate-x-1/2 w-[300px] sm:w-[600px] h-[200px] sm:h-[350px] rounded-full blur-[100px] sm:blur-[140px] pointer-events-none transition-all duration-700 ${
-          bulbBrightness === 'turbo' 
-            ? 'bg-amber-400/35 scale-110' 
-            : bulbBrightness === 'dim' 
-            ? 'bg-amber-600/10 scale-75' 
-            : 'bg-amber-500/20'
-        }`} 
-      />
-
-      {/* ========================================================================= */}
-      {/* HANGING VINTAGE INDUSTRIAL LIGHT BULBS (RESPONSIVE OVERHEAD)              */}
-      {/* ========================================================================= */}
-      <div className="relative z-20 w-full max-w-5xl mx-auto px-4 sm:px-6 flex justify-between pointer-events-none select-none -mt-1 sm:-mt-2">
-        {/* Left Hanging Bulb */}
-        <div className="flex flex-col items-center animate-bulb-swing-1">
-          <div className="w-0.5 h-8 sm:h-16 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
-          <div className="w-3.5 sm:w-4 h-3 sm:h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
-          <div className={`relative w-6 sm:w-8 h-8 sm:h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
-            bulbBrightness === 'turbo' 
-              ? 'bg-amber-400/50 animate-bulb-turbo' 
-              : bulbBrightness === 'dim' 
-              ? 'bg-amber-800/20' 
-              : 'bg-amber-500/30 animate-bulb-glow'
-          }`}>
-            <div className="w-2 sm:w-2.5 h-3 sm:h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
-          </div>
+      {/* Tactical Top Ambience & Overhead Brass Cords */}
+      <div className="absolute top-0 left-0 right-0 h-40 pointer-events-none z-10 flex justify-around px-4 md:px-20">
+        {/* Overhead Hanging Industrial Army Lamp 1 */}
+        <div className="relative flex flex-col items-center animate-bulb-swing-1">
+          <div className="w-[1.5px] h-14 md:h-20 bg-gradient-to-b from-amber-700 via-amber-800 to-amber-600 shadow-sm" />
+          <div className="w-4 h-3 bg-amber-950 border border-amber-600/80 rounded-t-sm shadow" />
+          <button 
+            onClick={() => setBulbBrightness(prev => prev === 'turbo' ? 'normal' : 'turbo')}
+            className={`w-6 h-8 md:w-8 md:h-10 rounded-b-full border border-amber-400/90 transition-all duration-300 relative group cursor-pointer ${
+              bulbBrightness === 'turbo' || isTurbo
+                ? 'bg-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.9)] animate-bulb-turbo'
+                : 'bg-amber-400/70 shadow-[0_0_18px_rgba(212,175,55,0.6)] animate-bulb-glow'
+            }`}
+            title="Click to toggle tactical illumination"
+          >
+            <div className="absolute inset-1 border-t border-amber-900/60 rounded-full opacity-60" />
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-3 bg-amber-100 rounded-full blur-[0.5px]" />
+          </button>
         </div>
 
-        {/* Center Defense Seal / Brand Header */}
-        <div className="pt-2 sm:pt-4 flex items-center gap-1.5 sm:gap-2.5">
-          <div className="h-1.5 w-1.5 sm:h-2 sm:w-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
-          <span className="text-[9px] sm:text-[10px] tracking-wider uppercase font-mono font-bold text-amber-300/95 bg-slate-900/90 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full border border-slate-800 shadow-sm">
-            ⚡ WAR ROOM LIVE DEPLOYMENT
-          </span>
-        </div>
-
-        {/* Right Hanging Bulb */}
-        <div className="flex flex-col items-center animate-bulb-swing-2">
-          <div className="w-0.5 h-10 sm:h-20 bg-gradient-to-b from-slate-700 to-slate-900 shadow-xs" />
-          <div className="w-3.5 sm:w-4 h-3 sm:h-4 rounded-t-sm bg-gradient-to-b from-amber-800 to-amber-950 border-t border-amber-600/60 shadow-xs" />
-          <div className={`relative w-6 sm:w-8 h-8 sm:h-10 rounded-b-full rounded-t-sm border border-amber-400/40 backdrop-blur-xs flex items-center justify-center transition-all duration-300 ${
-            bulbBrightness === 'turbo' 
-              ? 'bg-amber-400/50 animate-bulb-turbo' 
-              : bulbBrightness === 'dim' 
-              ? 'bg-amber-800/20' 
-              : 'bg-amber-500/30 animate-bulb-glow'
-          }`}>
-            <div className="w-2 sm:w-2.5 h-3 sm:h-4 border-t-2 border-x-2 border-amber-200 rounded-t-full shadow-[0_0_8px_#fef08a] animate-pulse" />
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-amber-300/40 rounded-b-full" />
-          </div>
+        {/* Overhead Hanging Industrial Army Lamp 2 */}
+        <div className="relative hidden sm:flex flex-col items-center animate-bulb-swing-2">
+          <div className="w-[1.5px] h-10 md:h-16 bg-gradient-to-b from-amber-700 via-amber-800 to-amber-600 shadow-sm" />
+          <div className="w-4 h-3 bg-amber-950 border border-amber-600/80 rounded-t-sm shadow" />
+          <button 
+            onClick={() => setBulbBrightness(prev => prev === 'turbo' ? 'normal' : 'turbo')}
+            className={`w-6 h-8 md:w-8 md:h-10 rounded-b-full border border-amber-400/90 transition-all duration-300 relative group cursor-pointer ${
+              bulbBrightness === 'turbo' || isTurbo
+                ? 'bg-amber-300 shadow-[0_0_35px_rgba(245,158,11,0.9)] animate-bulb-turbo'
+                : 'bg-amber-400/70 shadow-[0_0_18px_rgba(212,175,55,0.6)] animate-bulb-glow'
+            }`}
+            title="Click to toggle tactical illumination"
+          >
+            <div className="absolute inset-1 border-t border-amber-900/60 rounded-full opacity-60" />
+            <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-3 bg-amber-100 rounded-full blur-[0.5px]" />
+          </button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <main className="relative z-10 flex-1 max-w-6xl w-full mx-auto px-3.5 sm:px-6 lg:px-8 py-3 sm:py-8 space-y-8 sm:space-y-10">
-        
-        {/* ========================================================================= */}
-        {/* HERO: EXECUTIVE DEFENSE BADGE, TITLE & MOBILE CHRONOMETER                 */}
-        {/* ========================================================================= */}
-        <div className="text-center space-y-3.5 sm:space-y-4 max-w-3xl mx-auto pt-1">
-          <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-bold bg-slate-900/90 border border-slate-800 text-slate-300 shadow-sm">
-            <Shield className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-            <span className="truncate max-w-[220px] sm:max-w-none">UPSC National Defence Academy & GAT Intelligence</span>
-            <span className="h-1 w-1 rounded-full bg-slate-600 hidden sm:inline-block" />
-            <span className="text-amber-400 font-mono hidden sm:inline-block">14 Oct 2026</span>
-          </div>
-
-          <div className="space-y-1.5 sm:space-y-2">
-            <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold text-white tracking-tight leading-tight">
-              Platform Upgrade Underway
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal max-w-2xl mx-auto px-2">
-              Our engineering & defense content divisions are assembling the 2026-2027 UPSC NDA question vaults, defense missile telemetry database, and AI spaced repetition engine.
-            </p>
-          </div>
-
-          {/* Precision Chronometer (Responsive 4-Grid for Mobile) */}
-          <div className="grid grid-cols-4 gap-2 sm:gap-4 max-w-md sm:max-w-lg mx-auto pt-1 sm:pt-2">
-            {[
-              { label: "DAYS", value: timeLeft.days },
-              { label: "HOURS", value: timeLeft.hours },
-              { label: "MINUTES", value: timeLeft.minutes },
-              { label: "SECONDS", value: timeLeft.seconds }
-            ].map((unit) => (
-              <div 
-                key={unit.label}
-                className="bg-slate-900/90 border border-slate-800/90 rounded-xl sm:rounded-2xl p-2.5 sm:p-4 text-center shadow-md relative group hover:border-slate-700 transition"
-              >
-                <span className="block text-xl sm:text-3xl font-extrabold text-white tracking-tight font-tabular">
-                  {String(unit.value).padStart(2, '0')}
-                </span>
-                <span className="block text-[8px] sm:text-[10px] font-bold text-amber-400/90 tracking-wider uppercase mt-0.5">
-                  {unit.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* ========================================================================= */}
-        {/* ANIMATED WAR ROOM LAB: GENERATOR + CODERS AT WORK + TERMINAL RADAR        */}
-        {/* ========================================================================= */}
-        <section className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-xl backdrop-blur-md space-y-4 sm:space-y-6 relative overflow-hidden">
+      {/* TACTICAL HEADER (3-Zone Strict Top Bar Contract) */}
+      <header className="sticky top-0 z-40 bg-[#0c130e]/95 backdrop-blur-md border-b border-[#283b2c] px-4 lg:px-8 py-3.5 shadow-xl">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           
-          {/* Lab Header & Action Controls */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800/80 pb-3 sm:pb-4">
-            <div className="flex items-center gap-2.5 sm:gap-3">
-              <div className="p-1.5 sm:p-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
-                <Activity className="h-4 w-4 sm:h-5 sm:w-5 animate-pulse" />
-              </div>
-              <div>
-                <h3 className="text-xs sm:text-base font-extrabold text-white flex items-center gap-1.5 sm:gap-2">
-                  <span>Engineers & Power Generators Active</span>
-                  <span className="px-1.5 py-0.2 sm:px-2 sm:py-0.5 rounded text-[9px] sm:text-[10px] font-mono font-bold bg-emerald-950 text-emerald-400 border border-emerald-800/60">
-                    FULL LOAD
-                  </span>
-                </h3>
-                <p className="text-[11px] sm:text-xs text-slate-400 hidden sm:block">
-                  Live visualization of engineering pipelines and syllabus generator.
-                </p>
+          {/* Zone 1: Tri-Services Military Crest & Wordmark */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1b2b1e] to-[#0f1711] border border-amber-500/40 flex items-center justify-center shadow-lg relative shrink-0">
+              <Shield className="w-5 h-5 text-amber-400" />
+              <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-700 border-2 border-[#0c130e] flex items-center justify-center">
+                <Crosshair className="w-2 h-2 text-white animate-spin-slow" />
               </div>
             </div>
-
-            {/* Interactive Overclock & Lab Controls */}
-            <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
-              <button
-                onClick={handleToggleTurbo}
-                className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-extrabold transition cursor-pointer shadow-sm border ${
-                  isTurbo 
-                    ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
-                    : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
-                }`}
-              >
-                <Zap className={`h-3.5 w-3.5 ${isTurbo ? 'fill-current animate-bounce' : 'text-amber-400'}`} />
-                <span>{isTurbo ? 'Overclock ON' : 'Overclock Gen'}</span>
-              </button>
-
-              <button
-                onClick={handleBoostCoffee}
-                className={`flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition cursor-pointer border ${
-                  coffeeBoost 
-                    ? 'bg-amber-900/60 text-amber-200 border-amber-500' 
-                    : 'bg-slate-950 hover:bg-slate-800 text-slate-300 border-slate-700'
-                }`}
-                title="Boost coders with coffee"
-              >
-                <Coffee className={`h-3.5 w-3.5 text-amber-400 ${coffeeBoost ? 'animate-bounce' : ''}`} />
-                <span>{coffeeBoost ? 'Coffee ☕' : 'Coffee Fuel'}</span>
-              </button>
-
-              <button
-                onClick={() => setBulbBrightness(bulbBrightness === 'normal' ? 'turbo' : bulbBrightness === 'turbo' ? 'dim' : 'normal')}
-                className="p-2 sm:p-1.5 rounded-xl bg-slate-950 border border-slate-700 hover:bg-slate-800 text-amber-400 transition cursor-pointer shrink-0"
-                title="Cycle Bulb Brightness"
-                aria-label="Toggle Bulb Brightness"
-              >
-                <Lightbulb className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Interactive Visual Grid: Generator (Left) + Coders Working (Center) + Live Terminal/Radar (Right) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3.5 sm:gap-5 items-stretch">
-            
-            {/* 1. HEAVY INDUSTRIAL POWER GENERATOR (4 Cols) */}
-            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 sm:p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
-              
-              {/* Exhaust Pipe with Rising Steam Puffs */}
-              <div className="absolute top-2 right-4 flex flex-col items-center">
-                <div className="w-3.5 h-2.5 bg-slate-700 rounded-t-sm border-t border-slate-500" />
-                <div className="relative">
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-slate-300/30 blur-xs animate-steam-1" />
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-slate-200/20 blur-xs animate-steam-2" />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                    <Power className="h-3 w-3 text-amber-400" />
-                    GEN-4 DIESEL UNIT
-                  </span>
-                  <span className={`text-[9px] sm:text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
-                    isTurbo ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 animate-pulse' : 'bg-slate-800 text-slate-300'
-                  }`}>
-                    {isTurbo ? 'TURBO 4.8 kW' : 'NOMINAL 2.4 kW'}
-                  </span>
-                </div>
-
-                {/* Animated Rotating Gears & Machine Body */}
-                <div className="relative h-24 sm:h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-center overflow-hidden p-2">
-                  
-                  {/* Central Main Gear */}
-                  <div className={`relative z-10 w-14 sm:w-16 h-14 sm:h-16 rounded-full border-4 border-dashed border-amber-500/80 bg-slate-950 flex items-center justify-center shadow-md ${
-                    isTurbo ? 'animate-spin-turbo border-amber-400' : 'animate-spin-slow'
-                  }`}>
-                    <div className="w-5 sm:w-6 h-5 sm:h-6 rounded-full bg-slate-800 border-2 border-slate-700 flex items-center justify-center">
-                      <div className="w-2 h-2 rounded-full bg-amber-400" />
-                    </div>
-                  </div>
-
-                  {/* Secondary Interlocking Gear */}
-                  <div className={`absolute top-2 left-4 sm:left-6 w-10 sm:w-11 h-10 sm:h-11 rounded-full border-3 border-dashed border-slate-600 bg-slate-900 flex items-center justify-center ${
-                    isTurbo ? 'animate-spin-fast' : 'animate-spin-reverse'
-                  }`}>
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-700" />
-                  </div>
-
-                  {/* High Speed Pinion Gear */}
-                  <div className={`absolute bottom-2 right-6 sm:right-8 w-8 sm:w-9 h-8 sm:h-9 rounded-full border-2 border-dashed border-cyan-500/70 bg-slate-900 flex items-center justify-center ${
-                    isTurbo ? 'animate-spin-turbo' : 'animate-spin-fast'
-                  }`}>
-                    <div className="w-2 h-2 rounded-full bg-cyan-400" />
-                  </div>
-
-                  {/* Piston Thrust Arm */}
-                  <div className="absolute left-2.5 top-1/2 -translate-y-1/2 flex items-center">
-                    <div className={`w-2.5 sm:w-3 h-7 sm:h-8 rounded bg-gradient-to-b from-slate-600 to-slate-800 border border-slate-500 ${isTurbo ? 'animate-piston' : ''}`} />
-                  </div>
-
-                  {/* Sparks effect on Turbo */}
-                  {sparks.map(s => (
-                    <div 
-                      key={s.id} 
-                      className="absolute w-1.5 h-1.5 rounded-full bg-amber-300 shadow-[0_0_8px_#fbbf24] animate-ping"
-                      style={{ top: `calc(50% + ${s.y}px)`, left: `calc(50% + ${s.x}px)` }}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {/* Live Generator Dials & Gauges */}
-              <div className="grid grid-cols-3 gap-1.5 sm:gap-2 pt-2.5 border-t border-slate-800/80 mt-2.5 text-center">
-                <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-800">
-                  <span className="block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase">ROTATION</span>
-                  <span className="block text-[11px] sm:text-xs font-mono font-extrabold text-amber-400">{rpm} RPM</span>
-                </div>
-                <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-800">
-                  <span className="block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase">VOLTAGE</span>
-                  <span className="block text-[11px] sm:text-xs font-mono font-extrabold text-cyan-400">{voltage.toFixed(1)}V</span>
-                </div>
-                <div className="bg-slate-900/80 p-1 rounded-lg border border-slate-800">
-                  <span className="block text-[8px] sm:text-[9px] text-slate-400 font-bold uppercase">LOAD</span>
-                  <span className="block text-[11px] sm:text-xs font-mono font-extrabold text-emerald-400">{isTurbo ? '99.4%' : '88.2%'}</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* 2. CODERS & DEFENSE ENGINEERS AT WORK (4 Cols) */}
-            <div className="lg:col-span-4 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 sm:p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
-              
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                    <User className="h-3 w-3 text-cyan-400" />
-                    DEV WORKSPACE POD
-                  </span>
-                  <span className="text-[9px] sm:text-[10px] font-mono text-emerald-400 font-bold flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    ACTIVE CODING
-                  </span>
-                </div>
-
-                {/* Animated Coder Illustration & Multi-Monitor Workstation */}
-                <div className="relative h-24 sm:h-28 bg-slate-900/90 rounded-xl border border-slate-800 flex items-center justify-around p-2.5 overflow-hidden">
-                  
-                  {/* Coder 1 (Left - Defense AI Lead) */}
-                  <div className="flex flex-col items-center">
-                    <div className="relative">
-                      <div className="w-6 sm:w-7 h-6 sm:h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
-                        <div className="w-3 h-1 bg-cyan-400/80 rounded-full" />
-                      </div>
-                      <div className="absolute -top-1 -left-1 -right-1 h-3.5 sm:h-4 border-t-2 border-x-2 border-amber-400 rounded-t-full" />
-                    </div>
-                    <div className="w-9 sm:w-10 h-6 sm:h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
-                      <div className={`w-5 sm:w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-1' : 'animate-typing-2'}`} />
-                    </div>
-                    <div className="w-12 sm:w-14 h-1.5 sm:h-2 bg-slate-950 rounded-t border-t border-cyan-400/60 shadow-[0_0_8px_rgba(6,182,212,0.4)]" />
-                  </div>
-
-                  {/* Center Coffee Station with Rising Steam */}
-                  <div className="flex flex-col items-center justify-end h-full pb-1">
-                    <div className="relative">
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-amber-200/40 blur-2xs animate-steam-1" />
-                      <div className="w-3.5 sm:w-4 h-4 sm:h-5 rounded-b-md bg-amber-800 border border-amber-600 flex items-center justify-center">
-                        <div className="text-[6px] sm:text-[7px] font-bold text-amber-200">CA</div>
-                      </div>
-                    </div>
-                    <span className="text-[7px] sm:text-[8px] font-mono text-slate-500 mt-0.5">COFFEE</span>
-                  </div>
-
-                  {/* Coder 2 (Right - GAT Content Specialist) */}
-                  <div className="flex flex-col items-center">
-                    <div className="relative">
-                      <div className="w-6 sm:w-7 h-6 sm:h-7 rounded-full bg-slate-800 border-2 border-slate-600 flex items-center justify-center">
-                        <div className="w-3.5 h-1 border border-emerald-400/80 rounded-xs" />
-                      </div>
-                    </div>
-                    <div className="w-9 sm:w-10 h-6 sm:h-7 bg-slate-800 rounded-t-md border-t border-slate-700 mt-0.5 flex items-center justify-center relative">
-                      <div className={`w-5 sm:w-6 h-1.5 bg-slate-700 rounded-full border border-slate-600 ${isTurbo || coffeeBoost ? 'animate-typing-2' : 'animate-typing-1'}`} />
-                    </div>
-                    <div className="w-12 sm:w-14 h-1.5 sm:h-2 bg-slate-950 rounded-t border-t border-emerald-400/60 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Status Indicator */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2.5 border-t border-slate-800/80 mt-2.5">
-                <span className="flex items-center gap-1">
-                  <Flame className="h-3 w-3 text-amber-500" />
-                  <span>BURNDOWN: 94.2%</span>
-                </span>
-                <span className="text-cyan-400">
-                  {coffeeBoost ? 'VELOCITY: 3.5x' : isTurbo ? 'VELOCITY: 2.0x' : 'VELOCITY: 1.0x'}
-                </span>
-              </div>
-
-            </div>
-
-            {/* 3. LIVE COMPILER TERMINAL & RADAR SWEEP (4 Cols) */}
-            <div className="lg:col-span-4 md:col-span-2 bg-slate-950/90 border border-slate-800/90 rounded-2xl p-3.5 sm:p-4.5 flex flex-col justify-between relative overflow-hidden shadow-inner">
-              
-              <div>
-                <div className="flex items-center justify-between mb-2.5">
-                  <span className="text-[10px] font-mono uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                    <Terminal className="h-3 w-3 text-emerald-400" />
-                    BUILD TELEMETRY
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                    <span className="text-[9px] sm:text-[10px] font-mono font-bold text-slate-300">v2.4.0-RC3</span>
-                  </div>
-                </div>
-
-                {/* Radar + Live Terminal Feed */}
-                <div className="relative h-24 sm:h-28 bg-slate-900/90 rounded-xl border border-slate-800 p-2 sm:p-2.5 flex flex-col justify-between overflow-hidden">
-                  
-                  {/* Background Radar Sweep */}
-                  <div className="absolute right-2 bottom-2 w-14 sm:w-16 h-14 sm:h-16 rounded-full border border-emerald-500/20 pointer-events-none opacity-40">
-                    <div className="absolute inset-0 rounded-full border border-emerald-500/20" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-6 sm:w-8 h-6 sm:h-8 rounded-full border border-emerald-500/20" />
-                    <div className="absolute top-0 left-1/2 w-0.5 h-7 sm:h-8 bg-gradient-to-t from-emerald-400 to-transparent origin-bottom animate-radar" />
-                  </div>
-
-                  {/* Terminal Text Line */}
-                  <div className="space-y-1 z-10">
-                    <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-mono text-amber-400/90 font-bold">
-                      <span className="px-1.5 py-0.2 bg-amber-950/80 border border-amber-800 rounded">
-                        [{codeLogs[activeCodeLine].tag}]
-                      </span>
-                      <span className="text-emerald-400">READY</span>
-                    </div>
-                    <p className="text-[10px] sm:text-[11px] font-mono text-slate-300 leading-snug line-clamp-2">
-                      {codeLogs[activeCodeLine].msg}
-                    </p>
-                  </div>
-
-                  {/* Blinking Server Rack LEDs */}
-                  <div className="flex items-center gap-1.5 pt-1 border-t border-slate-800/80 z-10">
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-cyan-400 animate-pulse delay-100" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse delay-200" />
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse delay-300" />
-                    <span className="text-[8px] sm:text-[9px] font-mono text-slate-500 ml-auto">OCT_14_SYNC_OK</span>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Status indicator */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 pt-2.5 border-t border-slate-800/80 mt-2.5">
-                <span className="flex items-center gap-1">
-                  <Compass className="h-3 w-3 text-cyan-400" />
-                  <span>SYLLABUS COVERAGE</span>
-                </span>
-                <span className="text-emerald-400 font-bold">99.8% VERIFIED</span>
-              </div>
-
-            </div>
-
-          </div>
-
-        </section>
-
-        {/* ========================================================================= */}
-        {/* FULL-PAGE ASPIRANT QUERY & INTELLIGENCE DESK                              */}
-        {/* ========================================================================= */}
-        <section 
-          ref={querySectionRef} 
-          className="bg-slate-900/80 border border-slate-800 rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl backdrop-blur-md space-y-5 sm:space-y-6 relative overflow-hidden"
-        >
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 border-b border-slate-800 pb-4 sm:pb-5">
             <div>
               <div className="flex items-center gap-2">
-                <Brain className="h-4 sm:h-5 w-4 sm:w-5 text-amber-400 shrink-0" />
-                <h2 className="text-sm sm:text-lg font-bold text-white">
-                  Aspirant Query & Syllabus Intelligence Desk
-                </h2>
+                <span className="text-base md:text-lg font-bold tracking-tight text-white uppercase font-sans">
+                  National Defence Academy
+                </span>
+                <span className="hidden sm:inline-block px-1.5 py-0.2 text-[10px] font-bold tracking-wider uppercase text-amber-400 bg-amber-950/60 border border-amber-600/40 rounded">
+                  GAT Ops Command
+                </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
-                Submit syllabus questions to the AI Coach or register topic requests to be prioritized for the 14 Oct deployment.
+              <p className="text-[11px] text-amber-400/80 font-medium tracking-wide flex items-center gap-1.5">
+                <span>सेवा परमो धर्मः</span>
+                <span>·</span>
+                <span className="text-slate-400">Service Before Self</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Zone 2: Clean Tactical Nav Anchors */}
+          <nav className="hidden lg:flex items-center gap-6 text-xs font-semibold uppercase tracking-wider text-slate-300">
+            <a href="#war-room" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5 text-amber-500" />
+              War Room Engine
+            </a>
+            <a href="#chronometer" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-500" />
+              Launch DTG
+            </a>
+            <a href="#query-desk" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+              <Terminal className="w-3.5 h-3.5 text-amber-500" />
+              GAT Intel Desk
+            </a>
+            <a href="#roadmap" className="hover:text-amber-400 transition-colors flex items-center gap-1.5">
+              <Layers className="w-3.5 h-3.5 text-amber-500" />
+              Field Roadmap
+            </a>
+            <button 
+              onClick={() => setActiveModal('security')}
+              className="hover:text-amber-400 transition-colors flex items-center gap-1.5 cursor-pointer text-left"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-500" />
+              OPSEC Protocol
+            </button>
+          </nav>
+
+          {/* Zone 3: Primary Tactical Action & Defcon Status */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden sm:flex flex-col items-end text-right">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                DEFCON 1 READY
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">
+                {currentZuluTime}
+              </span>
+            </div>
+            <button
+              onClick={handleToggleTurbo}
+              className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded border transition-all flex items-center gap-1.5 ${
+                isTurbo 
+                  ? 'bg-amber-500 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
+                  : 'bg-[#18241b] text-amber-400 border-amber-600/40 hover:bg-[#203024]'
+              }`}
+            >
+              <Zap className={`w-3.5 h-3.5 ${isTurbo ? 'fill-black' : 'fill-amber-400'}`} />
+              <span className="hidden xs:inline">{isTurbo ? 'Overclocked' : 'Combat Boost'}</span>
+            </button>
+          </div>
+
+        </div>
+      </header>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 space-y-12">
+
+        {/* HERO SECTION: Strategic Command Banner */}
+        <section className="relative rounded-xl border border-[#283b2c] bg-gradient-to-b from-[#121c14] to-[#0c130e] p-6 sm:p-8 md:p-10 shadow-2xl overflow-hidden">
+          {/* Tactical Camo Strip & Crosshair Accents */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-600 via-amber-400 to-emerald-600" />
+          <div className="absolute top-3 left-3 text-[9px] font-mono text-slate-500 select-none">
+            [GRID: 28°36'N 77°12'E // SEC-01]
+          </div>
+          <div className="absolute top-3 right-3 text-[9px] font-mono text-slate-500 select-none">
+            [SYS-STATUS: LEVEL-A OP-READINESS]
+          </div>
+
+          <div className="max-w-3xl space-y-4">
+            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#1c2c1e] border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-widest">
+              <Flag className="w-3.5 h-3.5" />
+              Strategic Intelligence Portal Upgrade
+            </div>
+
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white uppercase font-sans leading-tight">
+              National Defence Academy <br />
+              <span className="text-amber-400">General Ability Test</span> Vault
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl font-normal">
+              Preparing future officers for the Indian Army, Navy, and Air Force. Complete curriculum integration underway — including high-yield General Studies capsules, defense affairs telemetry, and 150-question full-scale simulated mock drills.
+            </p>
+
+            {/* Quick Tactical Action Bar */}
+            <div className="pt-2 flex flex-wrap items-center gap-3">
+              <button
+                onClick={scrollToQuery}
+                className="px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-black rounded-lg shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Terminal className="w-4 h-4" />
+                Access Aspirant Query Desk
+              </button>
+
+              <button
+                onClick={() => setActiveModal('telemetry')}
+                className="px-4 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider bg-[#162218] hover:bg-[#1f3022] text-slate-200 border border-[#2e4433] rounded-lg flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Activity className="w-4 h-4 text-emerald-400" />
+                View System Telemetry
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* SECTION 1: MISSION LAUNCH CHRONOMETER (DTG TARGET) */}
+        <section id="chronometer" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#283b2c] pb-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-white flex items-center gap-2">
+                <Clock className="w-5 h-5 text-amber-400" />
+                Mission Deployment Chronometer
+              </h2>
+              <p className="text-xs text-slate-400">
+                Official target deployment timestamp: <span className="text-amber-400 font-mono">14 OCTOBER 2026 // 0000 HRS IST</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-3 text-xs font-mono text-slate-300 bg-[#121c14] border border-[#283b2c] px-3 py-1.5 rounded">
+              <span className="text-amber-400">IST: {currentIstTime}</span>
+              <span>·</span>
+              <span className="text-slate-400">ZULU: {currentZuluTime}</span>
+            </div>
+          </div>
+
+          {/* Chronometer 4-Digit Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            
+            {/* Days Card */}
+            <div className="relative bg-[#111a13] border border-[#283b2c] rounded-lg p-4 text-center shadow-lg group hover:border-amber-500/50 transition-all">
+              <div className="absolute top-2 left-2 text-[9px] font-mono text-slate-500">+ DTG-D</div>
+              <div className="text-3xl sm:text-5xl font-black text-amber-400 font-tabular tracking-tight">
+                {String(timeLeft.days).padStart(2, '0')}
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                Days Remaining
+              </div>
+              <div className="mt-2 text-[9px] font-mono text-slate-500 border-t border-[#1f2d21] pt-1">
+                CYCLE: T-MINUS
+              </div>
+            </div>
+
+            {/* Hours Card */}
+            <div className="relative bg-[#111a13] border border-[#283b2c] rounded-lg p-4 text-center shadow-lg group hover:border-amber-500/50 transition-all">
+              <div className="absolute top-2 left-2 text-[9px] font-mono text-slate-500">+ DTG-H</div>
+              <div className="text-3xl sm:text-5xl font-black text-amber-400 font-tabular tracking-tight">
+                {String(timeLeft.hours).padStart(2, '0')}
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                Hours
+              </div>
+              <div className="mt-2 text-[9px] font-mono text-slate-500 border-t border-[#1f2d21] pt-1">
+                24H ROTATION
+              </div>
+            </div>
+
+            {/* Minutes Card */}
+            <div className="relative bg-[#111a13] border border-[#283b2c] rounded-lg p-4 text-center shadow-lg group hover:border-amber-500/50 transition-all">
+              <div className="absolute top-2 left-2 text-[9px] font-mono text-slate-500">+ DTG-M</div>
+              <div className="text-3xl sm:text-5xl font-black text-amber-400 font-tabular tracking-tight">
+                {String(timeLeft.minutes).padStart(2, '0')}
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                Minutes
+              </div>
+              <div className="mt-2 text-[9px] font-mono text-slate-500 border-t border-[#1f2d21] pt-1">
+                SYNCHRONIZED
+              </div>
+            </div>
+
+            {/* Seconds Card */}
+            <div className="relative bg-[#111a13] border border-[#283b2c] rounded-lg p-4 text-center shadow-lg group hover:border-amber-500/50 transition-all">
+              <div className="absolute top-2 left-2 text-[9px] font-mono text-slate-500">+ DTG-S</div>
+              <div className="text-3xl sm:text-5xl font-black text-emerald-400 font-tabular tracking-tight animate-pulse">
+                {String(timeLeft.seconds).padStart(2, '0')}
+              </div>
+              <div className="text-[11px] font-bold uppercase tracking-widest text-slate-400 mt-1">
+                Seconds
+              </div>
+              <div className="mt-2 text-[9px] font-mono text-emerald-500 border-t border-[#1f2d21] pt-1">
+                ACTIVE TICK
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        {/* SECTION 2: DEFENSE WAR ROOM & FIELD GENERATOR ENGINEERING LAB */}
+        <section id="war-room" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#283b2c] pb-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-white flex items-center gap-2">
+                <Radio className="w-5 h-5 text-amber-400" />
+                Tactical War Room & Power Station (Gen-4 Unit)
+              </h2>
+              <p className="text-xs text-slate-400">
+                Heavy-duty field engineering operations, military cyber analyst workstations, and radar surveillance.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleCoffeeBoost}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded border transition-all flex items-center gap-1.5 cursor-pointer ${
+                  coffeeBoost 
+                    ? 'bg-amber-600 text-white border-amber-400 shadow-md' 
+                    : 'bg-[#152017] text-slate-300 border-[#2b3e2f] hover:bg-[#1e2d21]'
+                }`}
+              >
+                <Coffee className={`w-3.5 h-3.5 ${coffeeBoost ? 'animate-bounce' : 'text-amber-400'}`} />
+                <span>Ration Refuel</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Tactical Engineering Grid (2-Column Desktop, 1-Column Mobile) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            {/* Left Box: Hardened Camo Diesel Generator Rig (7 Cols) */}
+            <div className="lg:col-span-7 bg-[#101812] border border-[#283b2c] rounded-xl p-5 shadow-xl relative overflow-hidden flex flex-col justify-between">
+              
+              {/* Tactical Header within Generator */}
+              <div className="flex items-center justify-between border-b border-[#203023] pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  <Cpu className="w-4 h-4 text-amber-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    DEF-GEN 4.2 FIELD POWER STATION
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold">
+                    {isTurbo ? 'TURBO OVERCLOCK' : 'ONLINE 100%'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Central Mechanical Generator Representation */}
+              <div className="relative py-6 px-4 bg-[#0a0f0b] rounded-lg border border-[#1b2b1e] flex flex-col items-center justify-center overflow-hidden">
+                
+                {/* Exhaust Pipe & Animated Steam Exhaust */}
+                <div className="absolute top-2 right-8 flex flex-col items-center">
+                  <div className="relative">
+                    <div className="w-2 h-2 rounded-full bg-slate-400/40 animate-steam-1 absolute -top-4 left-0" />
+                    <div className="w-3 h-3 rounded-full bg-slate-300/30 animate-steam-2 absolute -top-8 -left-1" />
+                    <div className="w-5 h-7 bg-gradient-to-t from-slate-700 to-slate-900 border border-slate-600 rounded-t-sm" />
+                  </div>
+                  <div className="text-[8px] font-mono text-amber-500/80">EXHAUST</div>
+                </div>
+
+                {/* Flying Sparks in Turbo */}
+                {sparks.map(s => (
+                  <div 
+                    key={s.id}
+                    className="absolute w-1.5 h-1.5 bg-amber-300 rounded-full shadow-[0_0_8px_rgba(245,158,11,1)]"
+                    style={{ transform: `translate(${s.x}px, ${s.y}px)` }}
+                  />
+                ))}
+
+                {/* Interactive Generator Mechanical Core */}
+                <div className="flex items-center gap-6 md:gap-10 my-2">
+                  
+                  {/* Primary Power Gear */}
+                  <div className="relative flex flex-col items-center">
+                    <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full border-4 border-dashed border-amber-500/80 flex items-center justify-center shadow-lg ${
+                      isTurbo ? 'animate-spin-turbo border-amber-400' : 'animate-spin-slow'
+                    }`}>
+                      <div className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-[#18261b] border-2 border-amber-600 flex items-center justify-center">
+                        <Zap className="w-6 h-6 text-amber-400" />
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400 mt-2">MAIN ROTOR</span>
+                  </div>
+
+                  {/* Interlocking Secondary Turbine */}
+                  <div className="relative flex flex-col items-center">
+                    <div className={`w-14 h-14 md:w-16 md:h-16 rounded-full border-4 border-dotted border-emerald-500/80 flex items-center justify-center shadow-lg ${
+                      isTurbo ? 'animate-spin-turbo' : 'animate-spin-reverse'
+                    }`}>
+                      <div className="w-8 h-8 rounded-full bg-[#101b13] border border-emerald-400 flex items-center justify-center">
+                        <Crosshair className="w-4 h-4 text-emerald-400" />
+                      </div>
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400 mt-2">PINION DRIVE</span>
+                  </div>
+
+                  {/* Pneumatic Thrust Piston */}
+                  <div className="flex flex-col items-center">
+                    <div className="w-6 h-20 bg-slate-800 border border-slate-600 rounded-sm relative flex flex-col justify-end p-0.5">
+                      <div className={`w-full bg-amber-500 rounded-sm ${isTurbo ? 'animate-piston h-12' : 'h-8'}`} />
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400 mt-2">PISTON #1</span>
+                  </div>
+
+                </div>
+
+                {/* Mechanical Casing Label */}
+                <div className="mt-4 text-[10px] font-mono text-slate-400 tracking-wider flex items-center gap-2">
+                  <span className="text-amber-400 font-bold">KIRLOSKAR DEF-SPEC 2026</span>
+                  <span>·</span>
+                  <span>HEAVY DIESEL RIG</span>
+                </div>
+              </div>
+
+              {/* Generator Telemetry Readout Gauges */}
+              <div className="grid grid-cols-3 gap-3 mt-4 pt-3 border-t border-[#1f2f22]">
+                <div className="bg-[#0b100c] p-2.5 rounded border border-[#203023] text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Engine Speed</div>
+                  <div className="text-base sm:text-lg font-black font-mono text-amber-400">
+                    {rpm} <span className="text-[10px] text-slate-500">RPM</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#0b100c] p-2.5 rounded border border-[#203023] text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Line Voltage</div>
+                  <div className="text-base sm:text-lg font-black font-mono text-emerald-400">
+                    {voltage.toFixed(1)} <span className="text-[10px] text-slate-500">V</span>
+                  </div>
+                </div>
+
+                <div className="bg-[#0b100c] p-2.5 rounded border border-[#203023] text-center">
+                  <div className="text-[10px] font-bold text-slate-400 uppercase">Frequency</div>
+                  <div className="text-base sm:text-lg font-black font-mono text-sky-400">
+                    {frequency.toFixed(2)} <span className="text-[10px] text-slate-500">Hz</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Right Box: Radar Surveillance & Defense Coder Terminal (5 Cols) */}
+            <div className="lg:col-span-5 bg-[#101812] border border-[#283b2c] rounded-xl p-5 shadow-xl flex flex-col justify-between space-y-4">
+              
+              {/* Radar Section Header */}
+              <div className="flex items-center justify-between border-b border-[#203023] pb-3">
+                <div className="flex items-center gap-2">
+                  <Radar className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                    TRI-SERVICE RADAR SECTOR 04
+                  </span>
+                </div>
+                <span className="text-[10px] font-mono text-emerald-400">
+                  SCAN: 360° ACTIVE
+                </span>
+              </div>
+
+              {/* Circular Military Radar Grid */}
+              <div className="relative w-full h-40 bg-[#070e09] border border-emerald-900/60 rounded-lg flex items-center justify-center overflow-hidden">
+                {/* Radar Concentric Circles */}
+                <div className="absolute w-32 h-32 rounded-full border border-emerald-900/40" />
+                <div className="absolute w-20 h-20 rounded-full border border-emerald-800/40" />
+                <div className="absolute w-10 h-10 rounded-full border border-emerald-700/40" />
+                <div className="absolute w-full h-[1px] bg-emerald-900/40" />
+                <div className="absolute h-full w-[1px] bg-emerald-900/40" />
+
+                {/* Rotating Green Radar Beam */}
+                <div className="absolute inset-0 animate-radar pointer-events-none">
+                  <div className="w-1/2 h-1/2 bg-gradient-to-tr from-emerald-500/20 to-transparent origin-bottom-right rounded-tl-full" />
+                </div>
+
+                {/* Radar Target Blips */}
+                <div className="absolute top-8 right-12 w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(245,158,11,1)]" />
+                <div className="absolute bottom-10 left-16 w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,1)]" />
+                <div className="absolute top-12 left-20 w-1.5 h-1.5 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(56,189,248,1)]" />
+
+                <div className="absolute bottom-2 right-2 text-[8px] font-mono text-emerald-500">
+                  BEARING: 042° // RANGE: 180 NM
+                </div>
+              </div>
+
+              {/* Defense Intelligence Coders at Hardened Consoles */}
+              <div className="bg-[#0b100c] border border-[#203023] rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between text-[11px] font-bold text-slate-300">
+                  <span className="flex items-center gap-1.5 text-amber-400">
+                    <Terminal className="w-3.5 h-3.5" />
+                    LIVE MILITARY TERMINAL FEED
+                  </span>
+                  <span className="text-[9px] font-mono text-slate-500">BUFFER: 256KB</span>
+                </div>
+
+                {/* Live Rotated Code Log */}
+                <div className="font-mono text-xs text-emerald-400 bg-black/60 p-2.5 rounded border border-emerald-950 min-h-[58px] flex items-center">
+                  <div>
+                    <span className="text-amber-400 font-bold mr-2">
+                      [{codeLogs[activeCodeLine].tag}]
+                    </span>
+                    <span className="text-slate-200">
+                      {codeLogs[activeCodeLine].msg}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1">
+                  <span>Cyber Analysts: 4 Active</span>
+                  <span className="text-emerald-400 font-mono">100% Grounded</span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+
+        {/* SECTION 3: ASPIRANT FIELD COMMAND QUERY DESK & AI GAT COACH */}
+        <section ref={querySectionRef} id="query-desk" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#283b2c] pb-3">
+            <div>
+              <h2 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-white flex items-center gap-2">
+                <Terminal className="w-5 h-5 text-amber-400" />
+                Aspirant Field Command Query Desk
+              </h2>
+              <p className="text-xs text-slate-400">
+                Direct tactical intelligence queries for UPSC NDA GAT preparation, topic dispatches, and syllabus resolution.
               </p>
             </div>
 
-            {/* Mode Switcher Tabs (Touch-Friendly Responsive) */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 shrink-0 w-full sm:w-auto">
+            {/* Segmented Control Tabs */}
+            <div className="flex items-center gap-1 bg-[#121c14] border border-[#283b2c] p-1 rounded-lg">
               <button
-                onClick={() => setActiveTab('ai-coach')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'ai-coach'
-                    ? 'bg-amber-500 text-slate-950 shadow-xs'
-                    : 'text-slate-400 hover:text-white'
+                onClick={() => setActiveTab('ai')}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors cursor-pointer ${
+                  activeTab === 'ai'
+                    ? 'bg-amber-500 text-black shadow'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <Zap className="h-3.5 w-3.5 fill-current" />
-                <span>Instant AI Coach</span>
+                AI GAT Coach
               </button>
               <button
-                onClick={() => setActiveTab('submit-query')}
-                className={`flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
-                  activeTab === 'submit-query'
-                    ? 'bg-slate-800 text-white shadow-xs'
-                    : 'text-slate-400 hover:text-white'
+                onClick={() => setActiveTab('submit')}
+                className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-md transition-colors cursor-pointer ${
+                  activeTab === 'submit'
+                    ? 'bg-amber-500 text-black shadow'
+                    : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
-                <FileText className="h-3.5 w-3.5" />
-                <span>Submit Query Form</span>
+                Cadet Topic Request
               </button>
             </div>
           </div>
 
-          {/* TAB 1: INSTANT AI COACH QUERY BOX */}
-          {activeTab === 'ai-coach' && (
-            <div className="space-y-4 sm:space-y-6">
+          {/* TAB 1: AI GAT COACH */}
+          {activeTab === 'ai' && (
+            <div className="bg-[#101812] border border-[#283b2c] rounded-xl p-5 md:p-6 shadow-xl space-y-4">
               
-              {/* Suggested Topic Chips (Horizontal Scrollable on Mobile) */}
-              <div className="space-y-1.5 sm:space-y-2">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                  <Flame className="h-3 w-3 text-amber-500" /> Suggested High-Yield Query Topics:
-                </span>
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 sm:pb-0 sm:flex-wrap">
-                  {presetQueries.map((preset, idx) => (
+              {/* Quick High-Yield Syllabus Prompt Chips */}
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Brain className="w-3.5 h-3.5 text-amber-400" />
+                  High-Yield Tactical Syllabus Prompts (Click to ask):
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {quickPrompts.map((prompt, idx) => (
                     <button
                       key={idx}
                       onClick={() => {
-                        setAiQuery(preset.text);
-                        handleAskAICoach(preset.text);
+                        setQueryInput(prompt);
+                        handleAskAI(prompt);
                       }}
-                      className="text-[11px] font-medium px-3 py-1.5 rounded-xl border border-slate-800 bg-slate-950/70 hover:bg-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all cursor-pointer whitespace-nowrap sm:whitespace-normal shrink-0 sm:shrink"
+                      className="text-xs text-slate-300 bg-[#152218] hover:bg-[#203224] hover:text-amber-300 border border-[#2a3e2e] px-3 py-1.5 rounded-md transition-colors text-left cursor-pointer"
                     >
-                      {preset.title}
+                      {prompt}
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Input Form Bar */}
-              <form 
-                onSubmit={(e) => { e.preventDefault(); handleAskAICoach(); }}
-                className="flex flex-col sm:flex-row gap-2 sm:gap-2.5 items-stretch sm:items-center bg-slate-950 border border-slate-800 p-2 sm:p-2.5 rounded-2xl shadow-inner focus-within:border-amber-500/60 transition"
-              >
+              {/* Input Box & Submit Button */}
+              <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <input
                   type="text"
-                  value={aiQuery}
-                  onChange={(e) => setAiQuery(e.target.value)}
-                  placeholder="Ask any GAT topic: e.g. What are the key missile classifications, speeds, and DRDO ranges?"
-                  className="w-full bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-100 placeholder-slate-500 outline-none font-medium"
-                  disabled={aiLoading}
+                  value={queryInput}
+                  onChange={(e) => setQueryInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleAskAI()}
+                  placeholder="Ask any NDA GAT topic (e.g. BrahMos-ER, IGMDP, Himalayan Rivers, Indian Polity)..."
+                  className="flex-1 bg-[#0b100c] border border-[#2a3e2e] focus:border-amber-500 text-slate-100 placeholder-slate-500 text-xs sm:text-sm px-4 py-3 rounded-lg outline-none transition-all"
                 />
                 <button
-                  type="submit"
-                  disabled={aiLoading || !aiQuery.trim()}
-                  className="inline-flex items-center justify-center gap-1.5 px-4 sm:px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold shadow-md transition disabled:bg-slate-800 disabled:text-slate-500 cursor-pointer disabled:cursor-not-allowed shrink-0"
+                  onClick={() => handleAskAI()}
+                  disabled={loadingAi || !queryInput.trim()}
+                  className="px-6 py-3 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-bold text-xs sm:text-sm uppercase tracking-wider rounded-lg shadow transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
                 >
-                  {aiLoading ? (
+                  {loadingAi ? (
                     <>
-                      <Sparkles className="h-3.5 w-3.5 animate-spin text-slate-950" />
-                      <span>Processing...</span>
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      <span>Synthesizing...</span>
                     </>
                   ) : (
                     <>
-                      <Send className="h-3.5 w-3.5" />
-                      <span>Ask AI Coach</span>
+                      <Send className="w-4 h-4" />
+                      <span>Get Intel Brief</span>
                     </>
                   )}
                 </button>
-              </form>
+              </div>
 
-              {/* AI Query Result Display */}
+              {/* AI Structured Response Card */}
               {aiResponse && (
-                <div className="bg-slate-950 border border-slate-800/90 rounded-2xl p-4 sm:p-6 space-y-3.5 sm:space-y-4 animate-in fade-in duration-300 shadow-xl">
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
-                    <div className="flex items-center gap-2">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                      <span className="text-[11px] sm:text-xs font-bold text-amber-400 uppercase tracking-wider">
-                        UPSC NDA GAT Academic Intelligence Brief
-                      </span>
+                <div className="mt-4 bg-[#0a0f0b] border border-amber-600/40 rounded-lg p-5 space-y-3 relative shadow-2xl">
+                  <div className="flex items-center justify-between border-b border-[#203023] pb-2">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-400">
+                      <Shield className="w-4 h-4" />
+                      <span>Official GAT Strategic Intelligence Output</span>
                     </div>
-
+                    
+                    {/* Action Controls: Audio & Copy */}
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => handleToggleSpeech(aiResponse)}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-300 text-xs font-medium transition cursor-pointer"
-                        title="Listen Aloud"
+                        onClick={handleSpeakResponse}
+                        className={`p-1.5 rounded border transition-colors cursor-pointer ${
+                          isSpeaking 
+                            ? 'bg-amber-500 text-black border-amber-400' 
+                            : 'bg-[#152218] text-slate-300 border-[#2a3e2e] hover:text-white'
+                        }`}
+                        title={isSpeaking ? "Stop Voice Briefing" : "Listen to Radio Voice Briefing"}
                       >
-                        {speaking ? <VolumeX className="h-3.5 w-3.5 text-amber-400" /> : <Volume2 className="h-3.5 w-3.5" />}
-                        <span>{speaking ? 'Stop' : 'Listen'}</span>
+                        {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
                       </button>
 
                       <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(aiResponse);
-                          setCopiedResponse(true);
-                          setTimeout(() => setCopiedResponse(false), 2000);
-                        }}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-slate-800 hover:bg-slate-900 text-slate-300 text-xs font-medium transition cursor-pointer"
+                        onClick={handleCopyResponse}
+                        className="p-1.5 rounded bg-[#152218] text-slate-300 border border-[#2a3e2e] hover:text-white transition-colors cursor-pointer"
+                        title="Copy Briefing"
                       >
-                        {copiedResponse ? <Check className="h-3.5 w-3.5 text-emerald-400" /> : <Copy className="h-3.5 w-3.5" />}
-                        <span>{copiedResponse ? 'Copied' : 'Copy'}</span>
+                        {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
 
-                  <div className="text-xs sm:text-sm text-slate-200 font-sans leading-relaxed whitespace-pre-wrap space-y-2">
+                  {/* Formatted Text */}
+                  <div className="text-xs sm:text-sm text-slate-200 leading-relaxed whitespace-pre-wrap font-sans">
                     {aiResponse}
                   </div>
                 </div>
@@ -834,191 +885,188 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </div>
           )}
 
-          {/* TAB 2: SUBMIT ASPIRANT QUERY / TOPIC REQUEST FORM */}
-          {activeTab === 'submit-query' && (
-            <div className="space-y-4 sm:space-y-6">
-              
-              {submittedQuery ? (
-                <div className="bg-emerald-950/30 border border-emerald-500/30 rounded-2xl p-5 sm:p-6 text-center space-y-3 animate-in fade-in">
-                  <div className="h-10 sm:h-12 w-10 sm:w-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="h-5 sm:h-6 w-5 sm:w-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm sm:text-base font-bold text-white">Query Successfully Registered</h3>
-                    <p className="text-xs text-slate-300 max-w-md mx-auto">
-                      Tracking Reference: <strong className="text-emerald-400 font-mono">{submittedQuery.id}</strong>. Our editorial desk will review and integrate this topic into the **14 October 2026** platform deployment.
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSubmittedQuery(null)}
-                    className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-white text-xs font-bold transition cursor-pointer"
-                  >
-                    Submit Another Query
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmitQueryForm} className="space-y-3.5 sm:space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                    <div>
-                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        Aspirant Name *
-                      </label>
-                      <div className="relative">
-                        <User className="h-4 w-4 text-slate-500 absolute left-3.5 top-3" />
-                        <input
-                          type="text"
-                          required
-                          value={formData.name}
-                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                          placeholder="e.g. Cadet Rahul Sharma"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/60 transition"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        Email Address *
-                      </label>
-                      <div className="relative">
-                        <Mail className="h-4 w-4 text-slate-500 absolute left-3.5 top-3" />
-                        <input
-                          type="email"
-                          required
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          placeholder="e.g. rahul.nda@gmail.com"
-                          className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-2.5 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/60 transition"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 sm:gap-4">
-                    <div>
-                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        Inquiry Category
-                      </label>
-                      <select
-                        value={formData.category}
-                        onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-amber-500/60 transition cursor-pointer"
-                      >
-                        <option value="Syllabus Topic Request">Syllabus Topic Request (Priority for 14 Oct)</option>
-                        <option value="Exam Guidance">UPSC NDA 1/2027 GAT Guidance</option>
-                        <option value="Defense News Inquiry">Defense Technology / Weaponry Inquiry</option>
-                        <option value="Feature Suggestion">Feature Suggestion</option>
-                        <option value="Other">General Inquiry</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                        Urgency Level
-                      </label>
-                      <select
-                        value={formData.urgency}
-                        onChange={(e) => setFormData({ ...formData, urgency: e.target.value as any })}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs text-white outline-none focus:border-amber-500/60 transition cursor-pointer"
-                      >
-                        <option value="Normal">Normal Inquiry</option>
-                        <option value="High">High Priority (Exam in 2026/2027)</option>
-                        <option value="Immediate">Immediate Feedback</option>
-                      </select>
-                    </div>
-                  </div>
-
+          {/* TAB 2: CADET TOPIC REQUEST (FIRESTORE SYNC) */}
+          {activeTab === 'submit' && (
+            <div className="bg-[#101812] border border-[#283b2c] rounded-xl p-5 md:p-6 shadow-xl">
+              <form onSubmit={handleFormSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Detailed Syllabus Query or Request *
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      Cadet / Aspirant Name
                     </label>
-                    <textarea
+                    <input
+                      type="text"
                       required
-                      rows={3}
-                      value={formData.query}
-                      onChange={(e) => setFormData({ ...formData, query: e.target.value })}
-                      placeholder="Describe the topics, questions, or specific features you would like to see covered upon our full launch on 14 October..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3.5 text-xs text-white placeholder-slate-600 outline-none focus:border-amber-500/60 transition leading-relaxed"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      placeholder="e.g. Cadet Vikram Singh"
+                      className="w-full bg-[#0b100c] border border-[#2a3e2e] focus:border-amber-500 text-slate-100 text-xs sm:text-sm px-3.5 py-2.5 rounded-lg outline-none"
                     />
                   </div>
 
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      Cadet Official Email
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="e.g. cadet.vikram@nda.gov.in"
+                      className="w-full bg-[#0b100c] border border-[#2a3e2e] focus:border-amber-500 text-slate-100 text-xs sm:text-sm px-3.5 py-2.5 rounded-lg outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      Syllabus Section
+                    </label>
+                    <select
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value as any)}
+                      className="w-full bg-[#0b100c] border border-[#2a3e2e] focus:border-amber-500 text-slate-100 text-xs sm:text-sm px-3.5 py-2.5 rounded-lg outline-none"
+                    >
+                      <option value="Syllabus Topic Request">Syllabus Topic Request (General Ability Test)</option>
+                      <option value="Defense News Inquiry">Defense News & Missile Telemetry Inquiry</option>
+                      <option value="Exam Guidance">UPSC NDA & SSB Exam Strategy Guidance</option>
+                      <option value="Feature Suggestion">Feature & Mock Exam Suggestion</option>
+                      <option value="Other">General Cadet Inquiry</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                      Revision Urgency
+                    </label>
+                    <select
+                      value={urgency}
+                      onChange={(e) => setUrgency(e.target.value as any)}
+                      className="w-full bg-[#0b100c] border border-[#2a3e2e] focus:border-amber-500 text-slate-100 text-xs sm:text-sm px-3.5 py-2.5 rounded-lg outline-none"
+                    >
+                      <option value="Immediate">Immediate (Within 48 Hours)</option>
+                      <option value="High">High (Within 1 Week)</option>
+                      <option value="Normal">Normal Roadmap</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1">
+                    Requested Topic or Specific Question
+                  </label>
+                  <textarea
+                    required
+                    rows={3}
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="Provide details on the topic you want covered in the launch repository..."
+                    className="w-full bg-[#0b100c] border border-[#2a3e2e] focus:border-amber-500 text-slate-100 text-xs sm:text-sm p-3.5 rounded-lg outline-none resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <div className="text-[11px] text-slate-400">
+                    Logged to secure database with SHA-256 integrity.
+                  </div>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
-                    className="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold tracking-wider uppercase shadow-md transition cursor-pointer disabled:bg-slate-800 disabled:text-slate-500 flex items-center justify-center gap-2"
+                    disabled={submitting}
+                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:opacity-50 text-black font-bold text-xs uppercase tracking-wider rounded-lg shadow transition-all flex items-center gap-2 cursor-pointer"
                   >
-                    {isSubmitting ? (
-                      <>
-                        <Sparkles className="h-4 w-4 animate-spin text-slate-950" />
-                        <span>Transmitting Query to Editorial Desk...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        <span>Submit Official Inquiry</span>
-                      </>
-                    )}
+                    {submitting ? 'Transmitting Dispatch...' : 'Dispatch Request to Operations Desk'}
                   </button>
-                </form>
-              )}
+                </div>
 
+                {submitSuccess && (
+                  <div className="p-3 bg-emerald-950/80 border border-emerald-500/60 rounded-lg text-emerald-300 text-xs flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-emerald-400" />
+                    <span>Dispatch confirmed! Your request has been logged into the National Defence Academy curriculum vault.</span>
+                  </div>
+                )}
+              </form>
             </div>
           )}
 
         </section>
 
-        {/* ========================================================================= */}
-        {/* ROADMAP & FEATURE MODULES                                                 */}
-        {/* ========================================================================= */}
-        <section className="space-y-3 sm:space-y-4">
-          <div className="text-center space-y-1">
-            <h3 className="text-sm sm:text-lg font-bold text-white">
-              Upcoming Modules Releasing 14 October 2026
-            </h3>
-            <p className="text-[11px] sm:text-xs text-slate-400 max-w-lg mx-auto">
-              Core academic frameworks prepared for UPSC NDA General Ability Test aspirants:
+        {/* SECTION 4: TRI-SERVICE ROADMAP & TACTICAL MODULES (LAUNCHING 14 OCT 2026) */}
+        <section id="roadmap" className="space-y-4">
+          <div className="border-b border-[#283b2c] pb-3">
+            <h2 className="text-lg sm:text-xl font-bold uppercase tracking-wide text-white flex items-center gap-2">
+              <Layers className="w-5 h-5 text-amber-400" />
+              Strategic Deployment Modules (14 October 2026)
+            </h2>
+            <p className="text-xs text-slate-400">
+              Four specialized battle-tested academic engines engineered strictly for UPSC NDA & NA aspirants.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             
-            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-amber-400 flex items-center justify-center">
-                <Shield className="h-4 w-4" />
+            {/* Module 1 */}
+            <div className="bg-[#111a13] border border-[#283b2c] hover:border-amber-500/40 rounded-xl p-5 shadow-lg transition-all space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-amber-400 font-bold bg-[#1d2d20] px-2 py-0.5 rounded">
+                  MODULE ALPHA
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">1,000+ CAPSULES</span>
               </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white">1,000+ Defense Capsules</h4>
-              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
-                Daily tri-service defense news, bilateral military drills, DRDO missile specifications, and static GK links.
+              <h3 className="text-base font-bold text-white uppercase">
+                Tri-Service Defence Affairs & Geopolitics Vault
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Comprehensive, categorized intelligence briefs covering joint military drills (Yudh Abhyas, Malabar, Varuna, Garuda), defense procurement (BrahMos-ER, Tejas Mk1A, Project 75I), and strategic bilateral pacts.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-emerald-400 flex items-center justify-center">
-                <Zap className="h-4 w-4" />
+            {/* Module 2 */}
+            <div className="bg-[#111a13] border border-[#283b2c] hover:border-amber-500/40 rounded-xl p-5 shadow-lg transition-all space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-amber-400 font-bold bg-[#1d2d20] px-2 py-0.5 rounded">
+                  MODULE BRAVO
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">150-Q TIMED DRILLS</span>
               </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white">Spaced Repetition Matrix</h4>
-              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
-                SM-2 algorithm flashcard schedules to ensure zero memory decay for historical treaties and geographical passes.
+              <h3 className="text-base font-bold text-white uppercase">
+                UPSC GAT Full-Scale Simulated Exam Engine
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Exact replica of the 600-mark General Ability Test with strict UPSC negative marking rules (-0.83 marks per error), 2.5 hour countdown chronometer, and instant sectional breakdown analytics.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-cyan-400 flex items-center justify-center">
-                <Award className="h-4 w-4" />
+            {/* Module 3 */}
+            <div className="bg-[#111a13] border border-[#283b2c] hover:border-amber-500/40 rounded-xl p-5 shadow-lg transition-all space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-amber-400 font-bold bg-[#1d2d20] px-2 py-0.5 rounded">
+                  MODULE CHARLIE
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">SM-2 ALGORITHM</span>
               </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white">150-Q GAT Full Mocks</h4>
-              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
-                Realistic UPSC NDA simulation with negative marking (-0.83), timers, and granular percentile analytics.
+              <h3 className="text-base font-bold text-white uppercase">
+                SuperMemo SM-2 Spaced Repetition Retention Matrix
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Scientifically scheduled review prompts calculated automatically based on your recall accuracy, ensuring permanent cognitive retention of historical dates, scientific laws, and defense acronyms.
               </p>
             </div>
 
-            <div className="bg-slate-900/60 border border-slate-800 p-4 sm:p-5 rounded-2xl space-y-2 hover:border-slate-700 transition">
-              <div className="h-8 sm:h-9 w-8 sm:w-9 rounded-xl bg-slate-800 text-fuchsia-400 flex items-center justify-center">
-                <Volume2 className="h-4 w-4" />
+            {/* Module 4 */}
+            <div className="bg-[#111a13] border border-[#283b2c] hover:border-amber-500/40 rounded-xl p-5 shadow-lg transition-all space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono text-amber-400 font-bold bg-[#1d2d20] px-2 py-0.5 rounded">
+                  MODULE DELTA
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">3-MIN AUDIO BRIEFS</span>
               </div>
-              <h4 className="text-xs sm:text-sm font-bold text-white">Audio Intelligence Briefs</h4>
-              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed">
-                Hands-free 3-minute morning intelligence broadcasts to review news during physical training or commute.
+              <h3 className="text-base font-bold text-white uppercase">
+                Tactical Morning Audio Intelligence Capsules
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Synthesized 3-minute tri-service radio news briefs designed for morning physical training routines or commuting, summarizing the top 5 high-probability UPSC questions of the day.
               </p>
             </div>
 
@@ -1027,474 +1075,440 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
       </main>
 
-      {/* ========================================================================= */}
-      {/* INSTITUTIONAL COMPREHENSIVE FOOTER WITH COPYRIGHT & PRIVACY LINKS         */}
-      {/* ========================================================================= */}
-      <footer className="relative z-10 border-t border-slate-800/90 bg-[#030712] pt-8 sm:pt-12 pb-6 sm:pb-8 text-slate-400 font-sans">
-        
-        {/* Compliance Badges Ribbon */}
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 pb-6 sm:pb-10 border-b border-slate-800/80">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
-            
-            <button
-              onClick={() => setActiveModal('security')}
-              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
-            >
-              <ShieldCheck className="h-4 sm:h-5 w-4 sm:w-5 text-emerald-400 shrink-0 group-hover:scale-110 transition" />
-              <div className="overflow-hidden">
-                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-emerald-300 transition truncate">256-Bit Encryption</span>
-                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">End-to-End Security</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveModal('privacy')}
-              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
-            >
-              <EyeOff className="h-4 sm:h-5 w-4 sm:w-5 text-cyan-400 shrink-0 group-hover:scale-110 transition" />
-              <div className="overflow-hidden">
-                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-cyan-300 transition truncate">100% Student Privacy</span>
-                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">Zero Trackers</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveModal('copyright')}
-              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
-            >
-              <Copyright className="h-4 sm:h-5 w-4 sm:w-5 text-amber-400 shrink-0 group-hover:scale-110 transition" />
-              <div className="overflow-hidden">
-                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-amber-300 transition truncate">Copyright & IP</span>
-                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">Fair-Use Charter</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveModal('telemetry')}
-              className="flex items-center gap-2 sm:gap-2.5 p-2.5 sm:p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
-            >
-              <Server className="h-4 sm:h-5 w-4 sm:w-5 text-purple-400 shrink-0 group-hover:scale-110 transition" />
-              <div className="overflow-hidden">
-                <span className="block text-[11px] sm:text-xs font-bold text-white group-hover:text-purple-300 transition truncate">99.99% SLA Uptime</span>
-                <span className="block text-[9px] sm:text-[10px] text-slate-500 font-mono truncate">High Redundancy</span>
-              </div>
-            </button>
-
-          </div>
-        </div>
-
-        {/* 4-Column Navigation & Info Matrix */}
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 py-6 sm:py-10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 text-xs">
+      {/* COMPREHENSIVE MILITARY-GRADE FOOTER */}
+      <footer className="bg-[#070b08] border-t border-[#203023] text-slate-400 text-xs py-10 px-4 sm:px-6 lg:px-8 mt-12">
+        <div className="max-w-7xl mx-auto space-y-8">
           
-          {/* Col 1: Brand & Academic Credentials (4 cols) */}
-          <div className="lg:col-span-4 space-y-2.5 sm:space-y-3.5">
+          {/* Trust & Security Badges Ribbon */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 border-b border-[#18261b] pb-6">
             <div className="flex items-center gap-2.5">
-              <div className="h-7 sm:h-8 w-7 sm:w-8 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 font-black shadow-sm shrink-0">
-                <Shield className="h-4 w-4" />
+              <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-200 uppercase text-[11px]">256-Bit AES Encryption</div>
+                <div className="text-[10px] text-slate-500">End-to-End Cryptography</div>
               </div>
-              <span className="font-extrabold text-sm text-white tracking-tight">
-                NDA GAT Intelligence Engine
-              </span>
             </div>
+
+            <div className="flex items-center gap-2.5">
+              <EyeOff className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-200 uppercase text-[11px]">100% Cadet Privacy</div>
+                <div className="text-[10px] text-slate-500">Zero Trackers or Ad-Tech</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Scale className="w-4 h-4 text-amber-400 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-200 uppercase text-[11px]">DPDP Act 2023 Aligned</div>
+                <div className="text-[10px] text-slate-500">Indian Data Protection</div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <div>
+                <div className="font-bold text-slate-200 uppercase text-[11px]">99.99% Mission Uptime</div>
+                <div className="text-[10px] text-slate-500">Multi-Region Redundancy</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Institutional Multi-Column Links */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             
-            <p className="text-slate-400 text-xs leading-relaxed font-normal">
-              Official strategic preparation platform engineered for the UPSC National Defence Academy & Naval Academy Examination (General Ability Test). Built with military-grade precision and pedagogical rigor.
-            </p>
-
-            <div className="flex items-center gap-2 pt-1">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-emerald-950/80 border border-emerald-800/60 text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
-                SYSTEM STATUS: 100% OPERATIONAL
-              </span>
-            </div>
-          </div>
-
-          {/* Col 2: Core Syllabus Modules (3 cols) */}
-          <div className="lg:col-span-3 space-y-2 sm:space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-amber-400/90">
-              Intelligence Modules
-            </h4>
-            <ul className="space-y-1.5 sm:space-y-2 text-slate-400 text-[11px] sm:text-xs">
-              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
-                <span>1,000+ Tri-Service Defense GK</span>
-              </li>
-              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
-                <span>SM-2 Spaced Repetition Cache</span>
-              </li>
-              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
-                <span>150-Q UPSC NDA Simulation Mocks</span>
-              </li>
-              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
-                <span>Audio Intelligence Broadcasts</span>
-              </li>
-              <li className="flex items-center gap-2 hover:text-white transition cursor-default">
-                <ChevronRight className="h-3 w-3 text-slate-600 shrink-0" />
-                <span>Missile Telemetry & Command Vault</span>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 3: Legal, Privacy & Copyright Modals (3 cols) */}
-          <div className="lg:col-span-3 space-y-2 sm:space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-cyan-400/90">
-              Legal, Privacy & IP Links
-            </h4>
-            <ul className="space-y-1.5 sm:space-y-2 text-[11px] sm:text-xs">
-              <li>
-                <button
-                  onClick={() => setActiveModal('copyright')}
-                  className="flex items-center gap-2 text-slate-300 hover:text-amber-400 transition cursor-pointer text-left font-medium"
-                >
-                  <Copyright className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <span>Copyright & Intellectual Property</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveModal('privacy')}
-                  className="flex items-center gap-2 text-slate-300 hover:text-cyan-300 transition cursor-pointer text-left font-medium"
-                >
-                  <Lock className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
-                  <span>Privacy Policy (100% Protected)</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveModal('security')}
-                  className="flex items-center gap-2 text-slate-300 hover:text-emerald-300 transition cursor-pointer text-left font-medium"
-                >
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
-                  <span>Security & Encryption Protocol</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveModal('terms')}
-                  className="flex items-center gap-2 text-slate-300 hover:text-amber-300 transition cursor-pointer text-left font-medium"
-                >
-                  <Scale className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-                  <span>Terms of Service & Honor Code</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => setActiveModal('telemetry')}
-                  className="flex items-center gap-2 text-slate-300 hover:text-purple-300 transition cursor-pointer text-left font-medium"
-                >
-                  <Activity className="h-3.5 w-3.5 text-purple-400 shrink-0" />
-                  <span>System Telemetry & SLA Specs</span>
-                </button>
-              </li>
-            </ul>
-          </div>
-
-          {/* Col 4: Version & Build Specification (2 cols) */}
-          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
-            <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-emerald-400/90">
-              Build Specification
-            </h4>
-            <div className="space-y-1.5 font-mono text-[10px] sm:text-[11px] text-slate-400 bg-slate-900/60 p-2.5 sm:p-3 rounded-xl border border-slate-800">
-              <div>
-                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">VERSION</span>
-                <span className="text-emerald-400 font-bold">v2.4.0-PROD</span>
+            {/* Column 1: Crest & Mission */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-slate-100 font-bold uppercase tracking-wider">
+                <Shield className="w-4 h-4 text-amber-400" />
+                <span>NDA GAT Command Portal</span>
               </div>
-              <div>
-                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">BUILD CANDIDATE</span>
-                <span className="text-slate-300">2026.10.14-RC3</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">CIPHER SUITE</span>
-                <span className="text-cyan-300 truncate block">AES-256-GCM</span>
-              </div>
-              <div>
-                <span className="text-slate-500 block text-[8px] sm:text-[9px] uppercase">TARGET DATE</span>
-                <span className="text-amber-400 font-bold">14 OCT 2026</span>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                A dedicated educational intelligence engine created to empower national defence academy candidates with verified, grounded military current affairs and GAT mastery.
+              </p>
+              <div className="text-[10px] text-amber-400 font-mono">
+                VERSION: 2026.10.14-MIL-SPEC // SHA-256 VERIFIED
               </div>
             </div>
+
+            {/* Column 2: Legal & Charters */}
+            <div className="space-y-2">
+              <div className="font-bold uppercase tracking-wider text-slate-200 text-[11px]">
+                Legal & Governance
+              </div>
+              <ul className="space-y-1.5 text-[11px]">
+                <li>
+                  <button 
+                    onClick={() => setActiveModal('copyright')}
+                    className="hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer text-left"
+                  >
+                    <Copyright className="w-3 h-3 text-amber-500" />
+                    Copyright & Intellectual Property
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => setActiveModal('privacy')}
+                    className="hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer text-left"
+                  >
+                    <EyeOff className="w-3 h-3 text-emerald-500" />
+                    Cadet Data Privacy Charter
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => setActiveModal('terms')}
+                    className="hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer text-left"
+                  >
+                    <Scale className="w-3 h-3 text-slate-400" />
+                    Terms of Use & Honor Code
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: OPSEC & Infrastructure */}
+            <div className="space-y-2">
+              <div className="font-bold uppercase tracking-wider text-slate-200 text-[11px]">
+                Security Architecture
+              </div>
+              <ul className="space-y-1.5 text-[11px]">
+                <li>
+                  <button 
+                    onClick={() => setActiveModal('security')}
+                    className="hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer text-left"
+                  >
+                    <Lock className="w-3 h-3 text-amber-500" />
+                    OPSEC Security Protocol
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => setActiveModal('telemetry')}
+                    className="hover:text-amber-400 transition-colors flex items-center gap-1 cursor-pointer text-left"
+                  >
+                    <Activity className="w-3 h-3 text-emerald-500" />
+                    Live System Telemetry & SLA
+                  </button>
+                </li>
+                <li className="text-slate-500">
+                  <span>TLS 1.3 Transport Security</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 4: Official Attribution */}
+            <div className="space-y-2">
+              <div className="font-bold uppercase tracking-wider text-slate-200 text-[11px]">
+                Attributions & Scope
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Public domain press releases curated under India National Data Sharing and Accessibility Policy (NDSAP). Prepared for educational and study purposes.
+              </p>
+            </div>
+
           </div>
 
-        </div>
-
-        {/* Copyright & Direct Clickable Policy Links Bottom Bar */}
-        <div className="max-w-6xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-6 sm:pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-[11px] text-slate-400">
-          <div className="space-y-1 text-center md:text-left">
-            <p className="text-slate-300 font-medium text-xs">
+          {/* Bottom Copyright Bar */}
+          <div className="border-t border-[#18261b] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px]">
+            <div>
               © 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All Rights Reserved.
-            </p>
-            <p className="text-[10px] text-slate-500">
-              Academic preparation repository for UPSC NDA examination aspirants. Independent educational resource.
-            </p>
+            </div>
+
+            <div className="flex items-center gap-4 text-[11px]">
+              <button 
+                onClick={() => setActiveModal('copyright')}
+                className="hover:text-amber-400 transition-colors cursor-pointer"
+              >
+                Copyright
+              </button>
+              <span>·</span>
+              <button 
+                onClick={() => setActiveModal('privacy')}
+                className="hover:text-amber-400 transition-colors cursor-pointer"
+              >
+                Privacy Policy
+              </button>
+              <span>·</span>
+              <button 
+                onClick={() => setActiveModal('security')}
+                className="hover:text-amber-400 transition-colors cursor-pointer"
+              >
+                OPSEC Security
+              </button>
+              <span>·</span>
+              <button 
+                onClick={() => setActiveModal('terms')}
+                className="hover:text-amber-400 transition-colors cursor-pointer"
+              >
+                Terms of Use
+              </button>
+            </div>
           </div>
 
-          {/* Quick Clickable Policy Links */}
-          <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 text-slate-400 font-mono text-[10px]">
-            <button
-              onClick={() => setActiveModal('copyright')}
-              className="hover:text-amber-400 underline underline-offset-4 cursor-pointer transition"
-            >
-              Copyright Notice
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setActiveModal('privacy')}
-              className="hover:text-cyan-400 underline underline-offset-4 cursor-pointer transition"
-            >
-              Privacy Policy
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setActiveModal('security')}
-              className="hover:text-emerald-400 underline underline-offset-4 cursor-pointer transition"
-            >
-              Security Protocol
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => setActiveModal('terms')}
-              className="hover:text-amber-400 underline underline-offset-4 cursor-pointer transition"
-            >
-              Terms of Use
-            </button>
-            <span>•</span>
-            <button
-              onClick={() => scrollToQuery('submit-query')}
-              className="text-amber-400 font-bold hover:text-amber-300 underline underline-offset-4 cursor-pointer transition"
-            >
-              Desk Inquiry
-            </button>
-          </div>
         </div>
-
       </footer>
 
-      {/* ========================================================================= */}
-      {/* MOBILE BOTTOM FLOATING QUICK-ACTION BAR                                   */}
-      {/* ========================================================================= */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-slate-800 backdrop-blur-lg px-3 py-2 flex items-center justify-around text-[10px] font-bold shadow-2xl">
+      {/* MOBILE BOTTOM FLOATING QUICK DOCK (Touch Responsive) */}
+      <div className="lg:hidden fixed bottom-3 left-3 right-3 z-30 bg-[#0c130e]/95 backdrop-blur-md border border-[#283b2c] rounded-xl p-2 shadow-2xl flex items-center justify-around">
         <button
-          onClick={() => scrollToQuery('ai-coach')}
-          className="flex flex-col items-center gap-1 text-amber-400 cursor-pointer"
+          onClick={() => {
+            setActiveTab('ai');
+            scrollToQuery();
+          }}
+          className="flex flex-col items-center gap-0.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider"
         >
-          <Zap className="h-4 w-4" />
+          <Brain className="w-4 h-4" />
           <span>AI Coach</span>
         </button>
+
         <button
-          onClick={() => scrollToQuery('submit-query')}
-          className="flex flex-col items-center gap-1 text-slate-300 hover:text-white cursor-pointer"
+          onClick={() => {
+            setActiveTab('submit');
+            scrollToQuery();
+          }}
+          className="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 font-bold uppercase tracking-wider"
         >
-          <FileText className="h-4 w-4" />
+          <Send className="w-4 h-4" />
           <span>Ask Desk</span>
         </button>
+
         <button
           onClick={handleToggleTurbo}
-          className={`flex flex-col items-center gap-1 ${isTurbo ? 'text-amber-400 font-extrabold' : 'text-slate-400'} cursor-pointer`}
+          className={`flex flex-col items-center gap-0.5 text-[10px] font-bold uppercase tracking-wider ${
+            isTurbo ? 'text-amber-400' : 'text-slate-300'
+          }`}
         >
-          <Activity className="h-4 w-4" />
-          <span>{isTurbo ? 'Turbo ON' : 'Overclock'}</span>
+          <Zap className="w-4 h-4" />
+          <span>Boost</span>
         </button>
+
         <button
           onClick={() => setActiveModal('privacy')}
-          className="flex flex-col items-center gap-1 text-slate-300 hover:text-cyan-400 cursor-pointer"
+          className="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 font-bold uppercase tracking-wider"
         >
-          <Lock className="h-4 w-4" />
+          <EyeOff className="w-4 h-4" />
           <span>Privacy</span>
         </button>
+
         <button
           onClick={() => setActiveModal('copyright')}
-          className="flex flex-col items-center gap-1 text-slate-300 hover:text-amber-400 cursor-pointer"
+          className="flex flex-col items-center gap-0.5 text-[10px] text-slate-300 font-bold uppercase tracking-wider"
         >
-          <Copyright className="h-4 w-4" />
-          <span>Copyright</span>
+          <Copyright className="w-4 h-4" />
+          <span>Legal</span>
         </button>
       </div>
 
-      {/* ========================================================================= */}
-      {/* INTERACTIVE RESPONSIVE MODALS (MOBILE SLIDE-UP + DESKTOP CENTERED DIALOG) */}
-      {/* ========================================================================= */}
-      {activeModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
-          <div className="bg-slate-900 border border-slate-700 rounded-t-3xl sm:rounded-3xl max-w-2xl w-full max-h-[92vh] sm:max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in slide-in-from-bottom-10 sm:zoom-in-95 duration-200">
-            
-            {/* Modal Header */}
-            <div className="px-5 sm:px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/70 sticky top-0 z-10">
-              <div className="flex items-center gap-2.5 overflow-hidden">
-                {activeModal === 'copyright' && <Copyright className="h-5 w-5 text-amber-400 shrink-0" />}
-                {activeModal === 'privacy' && <Lock className="h-5 w-5 text-cyan-400 shrink-0" />}
-                {activeModal === 'security' && <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />}
-                {activeModal === 'terms' && <Scale className="h-5 w-5 text-amber-400 shrink-0" />}
-                {activeModal === 'telemetry' && <Activity className="h-5 w-5 text-purple-400 shrink-0" />}
-                
-                <h3 className="text-xs sm:text-base font-bold text-white truncate">
-                  {activeModal === 'copyright' && 'Copyright & Intellectual Property Notice'}
-                  {activeModal === 'privacy' && '100% Student Privacy Policy & Charter'}
-                  {activeModal === 'security' && 'Security Architecture & Encryption Protocol'}
-                  {activeModal === 'terms' && 'Terms of Service & Academic Honor Code'}
-                  {activeModal === 'telemetry' && 'System Architecture & SLA Metrics'}
-                </h3>
+      {/* INTERACTIVE MODAL DIALOGS */}
+
+      {/* 1. COPYRIGHT & IP CHARTER MODAL */}
+      {activeModal === 'copyright' && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#101812] border border-[#283b2c] rounded-t-2xl sm:rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-4 border-b border-[#203023] flex items-center justify-between bg-[#0b100c]">
+              <div className="flex items-center gap-2 text-amber-400 font-bold uppercase text-xs sm:text-sm">
+                <Copyright className="w-4 h-4" />
+                <span>Intellectual Property & Copyright Charter</span>
               </div>
-
-              <button
+              <button 
                 onClick={() => setActiveModal(null)}
-                className="p-1.5 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-white transition cursor-pointer shrink-0"
-                aria-label="Close modal"
+                className="p-1 rounded-md text-slate-400 hover:text-white bg-[#162218] cursor-pointer"
               >
-                <X className="h-5 w-5" />
+                <X className="w-5 h-5" />
               </button>
             </div>
-
-            {/* Modal Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-3.5 sm:space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
-              
-              {/* COPYRIGHT & IP CONTENT */}
-              {activeModal === 'copyright' && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
-                    <strong>Intellectual Property & Copyright Statement:</strong> © 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All educational methodologies, curated flashcards, algorithmic mock simulations, and interface assets are protected under the Indian Copyright Act (1957) and international intellectual property conventions (WIPO / Berne Convention).
-                  </div>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Scope of Protected Material</h4>
-                  <p>
-                    All original test question banks, diagnostic grading rubrics, tri-service defense summary capsules, spaced repetition memory schedules, and software logic generated by this platform are the exclusive intellectual property of the editorial and engineering team.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">2. Educational Fair-Use Authorization</h4>
-                  <p>
-                    Enrolled defense aspirants and cadets are granted a non-exclusive, non-transferable, personal license to view, study, attempt, and save question sets for individual self-study and examination preparation.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">3. Commercial Redistribution Prohibitions</h4>
-                  <p>
-                    Any unauthorized commercial reproduction, mass scraping, data mining, republishing, or sale of mock tests, questions, or proprietary editorial briefs without express written consent is strictly prohibited and subject to legal enforcement.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">4. Public Domain & Government Attributions</h4>
-                  <p>
-                    Factual information concerning national defense news, bilateral military exercises, DRDO missile specifications, and governmental communiques are derived from official public domain releases (PIB, Ministry of Defence, ISRO) under Open Government Data principles.
-                  </p>
-                </div>
-              )}
-
-              {/* PRIVACY POLICY CONTENT */}
-              {activeModal === 'privacy' && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-200 text-xs">
-                    <strong>100% Student Data Protection Guarantee:</strong> We do NOT sell, rent, monetize, or transmit any aspirant personal data, mock exam attempts, or learning telemetry to third parties.
-                  </div>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Data Collection & Usage</h4>
-                  <p>
-                    We collect only essential credentials (student name, email, target exam year) required to maintain synchronized bookmarks, spaced revision flashcards, and personalized diagnostic test performance.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">2. Zero Third-Party Advertising & Trackers</h4>
-                  <p>
-                    This platform contains zero third-party commercial advertising networks, zero data brokers, and zero behavioral telemetry SDKs. The study environment is 100% focused on academic excellence.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">3. DPDP Act 2023 & GDPR Compliance</h4>
-                  <p>
-                    In full accordance with the Digital Personal Data Protection (DPDP) Act of 2023 and global privacy frameworks, you retain complete rights to inspect, export, or permanently delete your learning records and quiz scores at any time from the account settings.
-                  </p>
-                </div>
-              )}
-
-              {/* SECURITY CONTENT */}
-              {activeModal === 'security' && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-500/30 text-emerald-200 text-xs">
-                    <strong>Enterprise Military-Grade Security:</strong> All user records, quiz histories, and editorial notes are secured with 256-Bit Advanced Encryption Standard (AES) at rest and Transport Layer Security (TLS 1.3) in transit.
-                  </div>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Database Security & Granular RBAC</h4>
-                  <p>
-                    User data is partitioned through strict Firestore Security Rules. Aspirants can only read and write their own quiz attempts, bookmarks, and revision items. Editorial and admin actions are strictly locked to authorized credentials.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">2. AI Request Sanitization & Rate-Limiting</h4>
-                  <p>
-                    All queries submitted to the GAT AI Coach Assistant are scrubbed and verified against rate limits to prevent prompt injection and unauthorized denial of service attacks.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">3. Continuous Vulnerability Auditing</h4>
-                  <p>
-                    Our dependencies and API bridges undergo continuous automated vulnerability scanning and adhere to OWASP Top 10 security standards.
-                  </p>
-                </div>
-              )}
-
-              {/* TERMS OF SERVICE */}
-              {activeModal === 'terms' && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
-                    <strong>Academic Integrity & Fair Use:</strong> This application is an educational aid designed solely to support defense aspirants preparing for the UPSC NDA & NA General Ability Test.
-                  </div>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">1. Educational License & Scope</h4>
-                  <p>
-                    All practice questions, defense cheatsheets, and spaced repetition notes are curated for individual student study. Unauthorized bulk scraping or redistribution of the question bank is prohibited.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">2. Examination Disclaimer</h4>
-                  <p>
-                    UPSC (Union Public Service Commission) is an independent constitutional authority. This portal is an educational study tool and is not officially affiliated with or endorsed by the Union Public Service Commission.
-                  </p>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">3. Aspirant Honor Code</h4>
-                  <p>
-                    Cadets and students are encouraged to uphold the highest standards of integrity, discipline, and honest self-assessment during mock examination attempts.
-                  </p>
-                </div>
-              )}
-
-              {/* SYSTEM TELEMETRY */}
-              {activeModal === 'telemetry' && (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="p-3 sm:p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/30 text-purple-200 text-xs">
-                    <strong>Deployment Architecture Specifications:</strong> High-availability cloud infrastructure optimized for low-latency delivery across pan-India networks.
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2.5 sm:gap-3 font-mono text-[10px] sm:text-xs">
-                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[9px]">CURRENT RELEASE</span>
-                      <span className="text-white font-bold truncate block">v2.4.0-PROD</span>
-                    </div>
-                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[9px]">TARGET LAUNCH</span>
-                      <span className="text-amber-400 font-bold truncate block">14 Oct 2026</span>
-                    </div>
-                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[9px]">UPTIME SLA</span>
-                      <span className="text-emerald-400 font-bold truncate block">99.99% Availability</span>
-                    </div>
-                    <div className="bg-slate-950 p-2.5 sm:p-3 rounded-xl border border-slate-800">
-                      <span className="text-slate-500 block text-[9px]">MEDIAN LATENCY</span>
-                      <span className="text-cyan-400 font-bold truncate block">&lt; 14ms (Edge)</span>
-                    </div>
-                  </div>
-
-                  <h4 className="font-bold text-white text-xs sm:text-sm">Multi-Tier Failover Mechanism</h4>
-                  <p>
-                    The AI Coach and quiz engines are configured with multi-tier automated cascade failover to ensure zero downtime even during upstream network reconfigurations.
-                  </p>
-                </div>
-              )}
-
+            <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">1. Proprietary Rights & Ownership</h4>
+                <p>All curated question banks, spaced repetition algorithmic parameters, synthesized audio briefings, and platform UI architectures are the exclusive intellectual property of the UPSC NDA GAT Intelligence Engine under the Indian Copyright Act (1957) and international WIPO agreements.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">2. Educational Fair-Use Authorization</h4>
+                <p>Enrolled aspirants and cadets are granted a non-exclusive, non-transferable license to access, read, and practice study materials for individual examination preparation.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">3. Government Open Data Attribution</h4>
+                <p>Official defense press releases, DRDO test announcements, and Ministry of Defence communiqués are public domain records integrated under National Data Sharing and Accessibility Policy (NDSAP) standards.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">4. Strict Commercial Prohibition</h4>
+                <p>Automated scraping, bulk harvesting, or commercial redistribution of any database assets without prior express written authorization is strictly prohibited.</p>
+              </div>
             </div>
-
-            {/* Modal Footer */}
-            <div className="px-5 sm:px-6 py-3.5 sm:py-4 border-t border-slate-800 bg-slate-950/70 flex justify-end">
+            <div className="p-4 border-t border-[#203023] bg-[#0b100c] flex justify-end">
               <button
                 onClick={() => setActiveModal(null)}
-                className="w-full sm:w-auto px-4 py-2.5 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition cursor-pointer text-center"
+                className="px-4 py-2 bg-amber-500 text-black font-bold text-xs uppercase tracking-wider rounded-lg"
               >
-                Close Specification
+                Acknowledge & Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
 
+      {/* 2. PRIVACY POLICY MODAL */}
+      {activeModal === 'privacy' && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#101812] border border-[#283b2c] rounded-t-2xl sm:rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-4 border-b border-[#203023] flex items-center justify-between bg-[#0b100c]">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase text-xs sm:text-sm">
+                <EyeOff className="w-4 h-4" />
+                <span>Cadet Data Privacy & Zero-Tracker Charter</span>
+              </div>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-white bg-[#162218] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">1. Absolute Zero Advertising & Trackers</h4>
+                <p>We do not operate third-party tracking scripts, pixel beacons, or ad-tech network integrations. Your study patterns and mock test scores belong entirely to you.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">2. DPDP Act 2023 & GDPR Harmonization</h4>
+                <p>Fully compliant with India's Digital Personal Data Protection (DPDP) Act 2023. User data is processed solely for academic progression, test evaluation, and spaced repetition scheduling.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">3. Zero Data Monetization</h4>
+                <p>We never sell, rent, or trade student profiles, quiz scores, or search inquiries to any commercial entity or external recruitment agency.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">4. Right to Erasure (Account Purge)</h4>
+                <p>Aspirants may permanently purge their profile, quiz attempts, and bookmarks from the database at any moment through their cadet profile console.</p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#203023] bg-[#0b100c] flex justify-end">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-lg"
+              >
+                Close Privacy Charter
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 3. OPSEC SECURITY PROTOCOL MODAL */}
+      {activeModal === 'security' && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#101812] border border-[#283b2c] rounded-t-2xl sm:rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-4 border-b border-[#203023] flex items-center justify-between bg-[#0b100c]">
+              <div className="flex items-center gap-2 text-amber-400 font-bold uppercase text-xs sm:text-sm">
+                <Lock className="w-4 h-4" />
+                <span>OPSEC Security & 256-Bit Cryptography Architecture</span>
+              </div>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-white bg-[#162218] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">1. Military-Grade 256-Bit AES Storage</h4>
+                <p>All database records, student queries, and revision state matrices are encrypted at rest using AES-256-GCM encryption with dynamic key rotation.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">2. TLS 1.3 Transport Channel</h4>
+                <p>Every network payload is encapsulated with modern TLS 1.3 protocols, preventing eavesdropping and man-in-the-middle attacks across public Wi-Fi networks.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">3. Role-Based Access Control (RBAC)</h4>
+                <p>Granular Firestore security rules restrict administrative operations strictly to authenticated academy officers, preventing unauthorized edits.</p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#203023] bg-[#0b100c] flex justify-end">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 bg-amber-500 text-black font-bold text-xs uppercase tracking-wider rounded-lg"
+              >
+                Dismiss Security Brief
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 4. TERMS OF USE & CADET HONOR CODE MODAL */}
+      {activeModal === 'terms' && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#101812] border border-[#283b2c] rounded-t-2xl sm:rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-4 border-b border-[#203023] flex items-center justify-between bg-[#0b100c]">
+              <div className="flex items-center gap-2 text-slate-200 font-bold uppercase text-xs sm:text-sm">
+                <Scale className="w-4 h-4 text-amber-400" />
+                <span>Terms of Service & National Defence Academy Honor Code</span>
+              </div>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-white bg-[#162218] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed">
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">1. Cadet Academic Integrity Pledge</h4>
+                <p>Aspirants agree to attempt all 150-question mock examinations under strict self-proctored honor standards without unapproved external aids.</p>
+              </div>
+              <div>
+                <h4 className="font-bold text-white uppercase text-xs mb-1">2. Fair Use & Personal Preparation</h4>
+                <p>Access is provided strictly for educational purposes preparing for UPSC examinations. Commercial exploitation is strictly prohibited.</p>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#203023] bg-[#0b100c] flex justify-end">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 bg-slate-200 text-black font-bold text-xs uppercase tracking-wider rounded-lg"
+              >
+                Accept Terms
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 5. SYSTEM SLA & TELEMETRY MODAL */}
+      {activeModal === 'telemetry' && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-[#101812] border border-[#283b2c] rounded-t-2xl sm:rounded-xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-4 border-b border-[#203023] flex items-center justify-between bg-[#0b100c]">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase text-xs sm:text-sm">
+                <Activity className="w-4 h-4" />
+                <span>Live System Telemetry & Field SLA Specs</span>
+              </div>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-white bg-[#162218] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-mono">
+              <div className="bg-[#070e09] p-3 rounded border border-[#1b2b1e] space-y-1.5">
+                <div className="text-emerald-400 font-bold">SYSTEM TELEMETRY SUMMARY:</div>
+                <div>· Platform: UPSC NDA GAT Tactical Intelligence Engine</div>
+                <div>· Deployment Target: 14 October 2026 // 0000 HRS IST</div>
+                <div>· Edge Latency: &lt; 14ms (CDN Edge Multi-Region)</div>
+                <div>· Target Availability SLA: 99.99% Guaranteed</div>
+                <div>· Database Engine: Google Firestore Cloud Datastore (Multi-Region)</div>
+                <div>· Security Encryption: AES-256-GCM / TLS 1.3 Active</div>
+              </div>
+            </div>
+            <div className="p-4 border-t border-[#203023] bg-[#0b100c] flex justify-end">
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 bg-emerald-500 text-black font-bold text-xs uppercase tracking-wider rounded-lg"
+              >
+                Close Telemetry View
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1502,5 +1516,4 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     </div>
   );
 };
-
 export default UnderConstruction;
