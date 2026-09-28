@@ -36,7 +36,8 @@ import {
   Scale,
   X,
   ExternalLink,
-  CheckCircle
+  CheckCircle,
+  Copyright
 } from 'lucide-react';
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
@@ -90,8 +91,8 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   const [voltage, setVoltage] = useState(238);
   const [activeCodeLine, setActiveCodeLine] = useState(0);
 
-  // Modal Dialog States for Footer Legal & Security
-  const [activeModal, setActiveModal] = useState<'privacy' | 'security' | 'terms' | 'telemetry' | null>(null);
+  // Modal Dialog States for Footer Legal, Copyright & Security
+  const [activeModal, setActiveModal] = useState<'privacy' | 'copyright' | 'security' | 'terms' | 'telemetry' | null>(null);
 
   // Live coder terminal logs
   const codeLogs = [
@@ -1009,7 +1010,7 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
       </main>
 
       {/* ========================================================================= */}
-      {/* INSTITUTIONAL COMPREHENSIVE FOOTER                                        */}
+      {/* INSTITUTIONAL COMPREHENSIVE FOOTER WITH COPYRIGHT & PRIVACY LINKS         */}
       {/* ========================================================================= */}
       <footer className="relative z-10 border-t border-slate-800/90 bg-[#030712] pt-12 pb-8 text-slate-400 font-sans">
         
@@ -1017,37 +1018,49 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 border-b border-slate-800/80">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+            <button
+              onClick={() => setActiveModal('security')}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+            >
+              <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0 group-hover:scale-110 transition" />
               <div>
-                <span className="block text-xs font-bold text-white">256-Bit AES Encryption</span>
+                <span className="block text-xs font-bold text-white group-hover:text-emerald-300 transition">256-Bit AES Encryption</span>
                 <span className="block text-[10px] text-slate-500 font-mono">End-to-End Data Security</span>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <EyeOff className="h-5 w-5 text-cyan-400 shrink-0" />
+            <button
+              onClick={() => setActiveModal('privacy')}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+            >
+              <EyeOff className="h-5 w-5 text-cyan-400 shrink-0 group-hover:scale-110 transition" />
               <div>
-                <span className="block text-xs font-bold text-white">100% Student Privacy</span>
-                <span className="block text-[10px] text-slate-500 font-mono">Zero Third-Party Ads / Trackers</span>
+                <span className="block text-xs font-bold text-white group-hover:text-cyan-300 transition">100% Student Privacy</span>
+                <span className="block text-[10px] text-slate-500 font-mono">Zero Third-Party Trackers</span>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <Scale className="h-5 w-5 text-amber-400 shrink-0" />
+            <button
+              onClick={() => setActiveModal('copyright')}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-amber-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+            >
+              <Copyright className="h-5 w-5 text-amber-400 shrink-0 group-hover:scale-110 transition" />
               <div>
-                <span className="block text-xs font-bold text-white">DPDP Act 2023 Aligned</span>
-                <span className="block text-[10px] text-slate-500 font-mono">Full Compliance Standard</span>
+                <span className="block text-xs font-bold text-white group-hover:text-amber-300 transition">Copyright & IP Protection</span>
+                <span className="block text-[10px] text-slate-500 font-mono">Educational Fair-Use Charter</span>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-              <Server className="h-5 w-5 text-purple-400 shrink-0" />
+            <button
+              onClick={() => setActiveModal('telemetry')}
+              className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 hover:bg-slate-900 transition text-left cursor-pointer group"
+            >
+              <Server className="h-5 w-5 text-purple-400 shrink-0 group-hover:scale-110 transition" />
               <div>
-                <span className="block text-xs font-bold text-white">99.99% Target SLA Uptime</span>
+                <span className="block text-xs font-bold text-white group-hover:text-purple-300 transition">99.99% Target SLA Uptime</span>
                 <span className="block text-[10px] text-slate-500 font-mono">High Availability Redundancy</span>
               </div>
-            </div>
+            </button>
 
           </div>
         </div>
@@ -1107,45 +1120,54 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </ul>
           </div>
 
-          {/* Col 3: Legal, Privacy & Security Modals (3 cols) */}
+          {/* Col 3: Legal, Privacy & Copyright Modals (3 cols) */}
           <div className="lg:col-span-3 space-y-3">
             <h4 className="text-xs font-bold text-white uppercase tracking-wider font-mono text-cyan-400/90">
-              Privacy & Governance
+              Legal, Privacy & IP Links
             </h4>
             <ul className="space-y-2">
               <li>
                 <button
-                  onClick={() => setActiveModal('privacy')}
-                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                  onClick={() => setActiveModal('copyright')}
+                  className="flex items-center gap-2 text-slate-300 hover:text-amber-400 transition cursor-pointer text-left font-medium"
                 >
-                  <Lock className="h-3.5 w-3.5 text-cyan-400" />
+                  <Copyright className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span>Copyright & Intellectual Property</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => setActiveModal('privacy')}
+                  className="flex items-center gap-2 text-slate-300 hover:text-cyan-300 transition cursor-pointer text-left font-medium"
+                >
+                  <Lock className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
                   <span>Privacy Policy (100% Protected)</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setActiveModal('security')}
-                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                  className="flex items-center gap-2 text-slate-300 hover:text-emerald-300 transition cursor-pointer text-left font-medium"
                 >
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>Security & Encryption Architecture</span>
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                  <span>Security & 256-Bit Encryption Protocol</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setActiveModal('terms')}
-                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                  className="flex items-center gap-2 text-slate-300 hover:text-amber-300 transition cursor-pointer text-left font-medium"
                 >
-                  <Scale className="h-3.5 w-3.5 text-amber-400" />
-                  <span>Terms of Service & Honor Code</span>
+                  <Scale className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+                  <span>Terms of Service & Cadet Honor Code</span>
                 </button>
               </li>
               <li>
                 <button
                   onClick={() => setActiveModal('telemetry')}
-                  className="flex items-center gap-2 text-slate-400 hover:text-cyan-300 transition cursor-pointer text-left"
+                  className="flex items-center gap-2 text-slate-300 hover:text-purple-300 transition cursor-pointer text-left font-medium"
                 >
-                  <Activity className="h-3.5 w-3.5 text-purple-400" />
+                  <Activity className="h-3.5 w-3.5 text-purple-400 shrink-0" />
                   <span>System Telemetry & SLA Specs</span>
                 </button>
               </li>
@@ -1179,31 +1201,63 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
 
         </div>
 
-        {/* Copyright & Disclaimer Bottom Bar */}
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] text-slate-500">
-          <div>
-            <p>© 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All Rights Reserved.</p>
-            <p className="text-[10px] text-slate-600 mt-0.5">
+        {/* Copyright & Direct Clickable Policy Links Bottom Bar */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 border-t border-slate-800/80 flex flex-col md:flex-row items-center justify-between gap-4 text-[11px] text-slate-400">
+          <div className="space-y-1 text-center md:text-left">
+            <p className="text-slate-300 font-medium">
+              © 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All Rights Reserved.
+            </p>
+            <p className="text-[10px] text-slate-500">
               Academic preparation repository for UPSC NDA examination aspirants. Independent educational resource.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 text-slate-400 font-mono text-[10px]">
-            <span className="flex items-center gap-1">
-              <CheckCircle className="h-3 w-3 text-emerald-400" />
-              <span>SHA-256 VERIFIED</span>
-            </span>
+          {/* Clickable Quick Action Legal & Privacy Links */}
+          <div className="flex flex-wrap items-center justify-center gap-3 text-slate-400 font-mono text-[10px]">
+            <button
+              onClick={() => setActiveModal('copyright')}
+              className="hover:text-amber-400 underline underline-offset-4 cursor-pointer transition"
+            >
+              Copyright Notice
+            </button>
             <span>•</span>
-            <span>GDPR / DPDP READY</span>
+            <button
+              onClick={() => setActiveModal('privacy')}
+              className="hover:text-cyan-400 underline underline-offset-4 cursor-pointer transition"
+            >
+              Privacy Policy
+            </button>
             <span>•</span>
-            <span className="text-amber-400 font-bold">OCT 14 LAUNCH</span>
+            <button
+              onClick={() => setActiveModal('security')}
+              className="hover:text-emerald-400 underline underline-offset-4 cursor-pointer transition"
+            >
+              Security Protocol
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => setActiveModal('terms')}
+              className="hover:text-amber-400 underline underline-offset-4 cursor-pointer transition"
+            >
+              Terms of Use
+            </button>
+            <span>•</span>
+            <button
+              onClick={() => {
+                setActiveTab('submit-query');
+                window.scrollTo({ top: 600, behavior: 'smooth' });
+              }}
+              className="text-amber-400 font-bold hover:text-amber-300 underline underline-offset-4 cursor-pointer transition"
+            >
+              Desk Inquiry
+            </button>
           </div>
         </div>
 
       </footer>
 
       {/* ========================================================================= */}
-      {/* INTERACTIVE MODALS FOR PRIVACY, SECURITY, TERMS, TELEMETRY                */}
+      {/* INTERACTIVE MODALS FOR COPYRIGHT, PRIVACY, SECURITY, TERMS, TELEMETRY     */}
       {/* ========================================================================= */}
       {activeModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
@@ -1212,12 +1266,14 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             {/* Modal Header */}
             <div className="px-6 py-4.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
               <div className="flex items-center gap-2.5">
+                {activeModal === 'copyright' && <Copyright className="h-5 w-5 text-amber-400" />}
                 {activeModal === 'privacy' && <Lock className="h-5 w-5 text-cyan-400" />}
                 {activeModal === 'security' && <ShieldCheck className="h-5 w-5 text-emerald-400" />}
                 {activeModal === 'terms' && <Scale className="h-5 w-5 text-amber-400" />}
                 {activeModal === 'telemetry' && <Activity className="h-5 w-5 text-purple-400" />}
                 
                 <h3 className="text-base font-bold text-white">
+                  {activeModal === 'copyright' && 'Copyright & Intellectual Property Protection Notice'}
                   {activeModal === 'privacy' && '100% Student Privacy Policy & Data Charter'}
                   {activeModal === 'security' && 'Security Architecture & 256-Bit Encryption Protocol'}
                   {activeModal === 'terms' && 'Terms of Service & Academic Honor Code'}
@@ -1236,6 +1292,35 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             {/* Modal Body Content */}
             <div className="p-6 overflow-y-auto space-y-4 text-xs sm:text-sm text-slate-300 leading-relaxed font-sans">
               
+              {/* COPYRIGHT & IP CONTENT */}
+              {activeModal === 'copyright' && (
+                <div className="space-y-4">
+                  <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-200 text-xs">
+                    <strong>Intellectual Property & Copyright Statement:</strong> © 2026 UPSC NDA General Ability Test (GAT) Intelligence Engine. All educational methodologies, curated flashcards, algorithmic mock simulations, and interface assets are protected under the Indian Copyright Act (1957) and international intellectual property conventions (WIPO / Berne Convention).
+                  </div>
+
+                  <h4 className="font-bold text-white text-sm">1. Scope of Protected Material</h4>
+                  <p>
+                    All original test question banks, diagnostic grading rubrics, tri-service defense summary capsules, spaced repetition memory schedules, and software logic generated by this platform are the exclusive intellectual property of the editorial and engineering team.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">2. Educational Fair-Use Authorization</h4>
+                  <p>
+                    Enrolled defense aspirants and cadets are granted a non-exclusive, non-transferable, personal license to view, study, attempt, and save question sets for individual self-study and examination preparation.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">3. Commercial Redistribution Prohibitions</h4>
+                  <p>
+                    Any unauthorized commercial reproduction, mass scraping, data mining, republishing, or sale of mock tests, questions, or proprietary editorial briefs without express written consent is strictly prohibited and subject to legal enforcement.
+                  </p>
+
+                  <h4 className="font-bold text-white text-sm">4. Public Domain & Government Attributions</h4>
+                  <p>
+                    Factual information concerning national defense news, bilateral military exercises, DRDO missile specifications, and governmental communiques are derived from official public domain releases (PIB, Ministry of Defence, ISRO) under Open Government Data principles.
+                  </p>
+                </div>
+              )}
+
               {/* PRIVACY POLICY CONTENT */}
               {activeModal === 'privacy' && (
                 <div className="space-y-4">
