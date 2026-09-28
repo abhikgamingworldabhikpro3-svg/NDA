@@ -18,17 +18,16 @@ import {
   Crosshair, 
   Sparkles,
   Layers,
-  ArrowRight,
-  ExternalLink
+  Inbox
 } from 'lucide-react';
 import { userQueryService } from '../services/dbServices';
+import { AdminMailboxModal } from '../components/AdminMailboxModal';
 
 interface LaunchProps {
   onBackToCommand: () => void;
-  onEnterApp?: () => void;
 }
 
-export const Launch: React.FC<LaunchProps> = ({ onBackToCommand, onEnterApp }) => {
+export const Launch: React.FC<LaunchProps> = ({ onBackToCommand }) => {
   // Target Launch Date: October 14, 2026
   const targetDate = new Date('2026-10-14T00:00:00').getTime();
 
@@ -54,6 +53,21 @@ export const Launch: React.FC<LaunchProps> = ({ onBackToCommand, onEnterApp }) =
   const [cadetName, setCadetName] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
   const [registeredSuccess, setRegisteredSuccess] = useState(false);
+
+  // Admin Mailbox Modal State & Received Count
+  const [showMailbox, setShowMailbox] = useState(false);
+  const [receivedMailCount, setReceivedMailCount] = useState<number>(0);
+
+  const fetchMailCount = async () => {
+    try {
+      const list = await userQueryService.getUserQueries();
+      setReceivedMailCount(list.length);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    fetchMailCount();
+  }, []);
 
   useEffect(() => {
     const updateCountdown = () => {
@@ -158,9 +172,11 @@ export const Launch: React.FC<LaunchProps> = ({ onBackToCommand, onEnterApp }) =
       setRegisteredSuccess(true);
       setCadetEmail('');
       setCadetName('');
+      fetchMailCount();
     } catch (err) {
       console.warn("Sync note, registered locally:", err);
       setRegisteredSuccess(true);
+      fetchMailCount();
     } finally {
       setIsRegistering(false);
     }
@@ -192,15 +208,20 @@ export const Launch: React.FC<LaunchProps> = ({ onBackToCommand, onEnterApp }) =
               </span>
             </div>
 
-            {onEnterApp && (
-              <button
-                onClick={onEnterApp}
-                className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg shadow-lg flex items-center gap-1.5 transition-all cursor-pointer"
-              >
-                <span>Enter Live Portal Demo</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            )}
+            {/* Received Mails / Intelligence Desk Button */}
+            <button
+              onClick={() => setShowMailbox(true)}
+              className="px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#162419] hover:bg-[#203424] text-amber-400 border border-amber-600/50 rounded-lg shadow flex items-center gap-2 transition-all cursor-pointer"
+              title="View all received cadet emails, topic requests & inquiries"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Received Mails</span>
+              {receivedMailCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-amber-500 text-black text-[10px] font-black rounded-full">
+                  {receivedMailCount}
+                </span>
+              )}
+            </button>
           </div>
 
         </div>
@@ -389,7 +410,7 @@ export const Launch: React.FC<LaunchProps> = ({ onBackToCommand, onEnterApp }) =
             )}
           </div>
 
-          {/* Action Buttons: Return & Enter Live Demo */}
+          {/* Action Buttons: Return & View Received Mails */}
           <div className="pt-2 flex flex-wrap items-center justify-center gap-4">
             <button
               onClick={onBackToCommand}
@@ -399,20 +420,27 @@ export const Launch: React.FC<LaunchProps> = ({ onBackToCommand, onEnterApp }) =
               <span>Back to Command Centre</span>
             </button>
 
-            {onEnterApp && (
-              <button
-                onClick={onEnterApp}
-                className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-lg flex items-center gap-2 transition-all cursor-pointer"
-              >
-                <span>Enter Live Portal Demo</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            )}
+            <button
+              onClick={() => setShowMailbox(true)}
+              className="px-6 py-2.5 bg-[#18261b] hover:bg-[#223626] text-amber-400 border border-amber-600/40 font-bold text-xs uppercase tracking-wider rounded-lg shadow flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <Mail className="w-4 h-4" />
+              <span>View Received Cadet Inquiries ({receivedMailCount})</span>
+            </button>
           </div>
 
         </div>
 
       </main>
+
+      {/* Admin Received Mails Modal */}
+      <AdminMailboxModal 
+        isOpen={showMailbox} 
+        onClose={() => {
+          setShowMailbox(false);
+          fetchMailCount();
+        }} 
+      />
 
       {/* Minimal Footer */}
       <footer className="bg-[#070b08] border-t border-[#203023] text-slate-400 text-xs py-6 px-4 text-center">

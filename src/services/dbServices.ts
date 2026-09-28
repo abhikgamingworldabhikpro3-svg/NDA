@@ -637,6 +637,37 @@ export const userQueryService = {
         return [];
       }
     }
+  },
+
+  async updateQueryStatus(queryId: string, status: 'received' | 'in-review' | 'answered'): Promise<void> {
+    try {
+      await setDoc(doc(db, 'userQueries', queryId), { status }, { merge: true });
+    } catch (err) {
+      console.warn("Firestore status update failed, updating locally:", err);
+    }
+    // Update local storage too
+    try {
+      const local: UserQuery[] = JSON.parse(localStorage.getItem('nda_user_queries') || '[]');
+      const idx = local.findIndex(q => q.id === queryId);
+      if (idx !== -1) {
+        local[idx].status = status;
+        localStorage.setItem('nda_user_queries', JSON.stringify(local));
+      }
+    } catch (e) {}
+  },
+
+  async deleteQuery(queryId: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'userQueries', queryId));
+    } catch (err) {
+      console.warn("Firestore delete failed, removing locally:", err);
+    }
+    // Remove from local storage
+    try {
+      const local: UserQuery[] = JSON.parse(localStorage.getItem('nda_user_queries') || '[]');
+      const filtered = local.filter(q => q.id !== queryId);
+      localStorage.setItem('nda_user_queries', JSON.stringify(filtered));
+    } catch (e) {}
   }
 };
 

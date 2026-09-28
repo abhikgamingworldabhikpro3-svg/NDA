@@ -59,16 +59,16 @@ import {
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
 import Launch from './Launch';
+import { AdminMailboxModal } from '../components/AdminMailboxModal';
 
 interface UnderConstructionProps {
-  onEnterApp?: () => void;
   onLaunchNow?: () => void;
   darkMode?: boolean;
   setDarkMode?: (val: boolean) => void;
   lang?: string;
 }
 
-export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp, onLaunchNow }) => {
+export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onLaunchNow }) => {
   // Launch Page View State
   const [showLaunchPage, setShowLaunchPage] = useState(false);
   // Target Launch Date: October 14, 2026
@@ -130,6 +130,21 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp
 
   // Modal Dialog States for Footer Legal, Copyright & Security
   const [activeModal, setActiveModal] = useState<'privacy' | 'copyright' | 'security' | 'terms' | 'telemetry' | null>(null);
+
+  // Admin Mailbox Modal State & Received Counter
+  const [showMailbox, setShowMailbox] = useState(false);
+  const [receivedMailCount, setReceivedMailCount] = useState<number>(0);
+
+  const fetchMailCount = async () => {
+    try {
+      const list = await userQueryService.getUserQueries();
+      setReceivedMailCount(list.length);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    fetchMailCount();
+  }, []);
 
   // Query section reference for smooth scrolling
   const querySectionRef = useRef<HTMLElement>(null);
@@ -319,9 +334,12 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp
       setName('');
       setEmail('');
       setTopic('');
+      fetchMailCount();
       setTimeout(() => setSubmitSuccess(false), 5000);
     } catch (err) {
       console.error("Submission error:", err);
+      setSubmitSuccess(true);
+      fetchMailCount();
     } finally {
       setSubmitting(false);
     }
@@ -362,7 +380,6 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp
     return (
       <Launch 
         onBackToCommand={() => setShowLaunchPage(false)} 
-        onEnterApp={onEnterApp} 
       />
     );
   }
@@ -479,6 +496,21 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp
                 </span>
               </div>
             </div>
+
+            {/* Received Mails / Intelligence Desk Button */}
+            <button
+              onClick={() => setShowMailbox(true)}
+              className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider bg-[#142016] hover:bg-[#1e3021] text-amber-400 border border-amber-600/40 rounded-lg shadow flex items-center gap-1.5 transition-all cursor-pointer"
+              title="View all received cadet emails, topic requests & inquiries"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Received Mails</span>
+              {receivedMailCount > 0 && (
+                <span className="px-1.5 py-0.2 bg-amber-500 text-black text-[10px] font-black rounded-full">
+                  {receivedMailCount}
+                </span>
+              )}
+            </button>
 
             {/* Launch Now Button */}
             <button
@@ -1490,6 +1522,19 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp
         </button>
 
         <button
+          onClick={() => setShowMailbox(true)}
+          className="flex flex-col items-center gap-0.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider relative cursor-pointer"
+        >
+          <Mail className="w-4 h-4" />
+          <span>Mails</span>
+          {receivedMailCount > 0 && (
+            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-500 text-black text-[9px] font-black rounded-full flex items-center justify-center">
+              {receivedMailCount}
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => {
             if (onLaunchNow) onLaunchNow();
             else setShowLaunchPage(true);
@@ -1729,6 +1774,15 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp
           </div>
         </div>
       )}
+
+      {/* Admin Received Cadet Mails Modal */}
+      <AdminMailboxModal 
+        isOpen={showMailbox} 
+        onClose={() => {
+          setShowMailbox(false);
+          fetchMailCount();
+        }} 
+      />
 
     </div>
   );

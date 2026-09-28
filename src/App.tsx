@@ -51,15 +51,6 @@ const MainAppContent: React.FC = () => {
   const targetLaunchTimestamp = new Date('2026-10-14T00:00:00').getTime();
   const isUnderConstructionPeriod = new Date().getTime() < targetLaunchTimestamp;
 
-  // Preview Mode flag so admins & testers can access the portal freely
-  const [previewMode, setPreviewMode] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem('nda_preview_mode') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
   // Track browser history navigation back/forward actions
   useEffect(() => {
     const handlePopState = () => {
@@ -99,18 +90,6 @@ const MainAppContent: React.FC = () => {
     setCurrentPath(path);
   };
 
-  const enablePreviewAndEnter = () => {
-    setPreviewMode(true);
-    try {
-      sessionStorage.setItem('nda_preview_mode', 'true');
-    } catch {}
-    if (currentUser) {
-      navigate('/dashboard');
-    } else {
-      navigate('/login');
-    }
-  };
-
   // Helper function to extract path parameters (like articleId from /current-affairs/art_123)
   const getRouteParam = (pathPattern: string, actualPath: string) => {
     const patternParts = pathPattern.split('/');
@@ -131,8 +110,8 @@ const MainAppContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center items-center space-y-4 font-sans">
-        <RefreshCw className="h-8 w-8 text-indigo-500 animate-spin" />
+      <div className="min-h-screen bg-[#080d09] text-slate-100 flex flex-col justify-center items-center space-y-4 font-sans">
+        <RefreshCw className="h-8 w-8 text-amber-500 animate-spin" />
         <p className="text-xs font-bold text-slate-400">Verifying secure student identity, establishing connection...</p>
       </div>
     );
@@ -143,19 +122,14 @@ const MainAppContent: React.FC = () => {
     return (
       <Launch 
         onBackToCommand={() => navigate('/')} 
-        onEnterApp={enablePreviewAndEnter} 
       />
     );
   }
 
-  // EXPLICIT UNDER CONSTRUCTION ROUTE OR DEFAULT LANDING TILL 14 OCT
-  if (
-    currentPath === '/under-construction' || 
-    (isUnderConstructionPeriod && !previewMode && (currentPath === '/' || !currentUser))
-  ) {
+  // EXPLICIT UNDER CONSTRUCTION ROUTE OR DEFAULT LANDING TILL 14 OCT (Demo not accessible)
+  if (isUnderConstructionPeriod || currentPath === '/under-construction' || currentPath === '/' || !currentUser) {
     return (
       <UnderConstruction 
-        onEnterApp={enablePreviewAndEnter} 
         onLaunchNow={() => navigate('/launch')}
         darkMode={darkMode} 
         setDarkMode={setDarkMode} 
@@ -277,7 +251,6 @@ const MainAppContent: React.FC = () => {
           setDarkMode={setDarkMode}
           onLogout={() => {
             sessionStorage.removeItem('nda_preview_mode');
-            setPreviewMode(false);
             navigate('/');
           }}
         />
