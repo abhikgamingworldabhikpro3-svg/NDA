@@ -27,7 +27,8 @@ import {
   AuditLog,
   PriorityType,
   AttemptType,
-  AppLanguage
+  AppLanguage,
+  UserQuery
 } from '../types';
 
 // ==========================================
@@ -589,3 +590,53 @@ export const auditService = {
     }
   }
 };
+
+// ==========================================
+// 10. USER QUERIES & ASPIRANT INQUIRY SERVICE
+// ==========================================
+export const userQueryService = {
+  async submitQuery(queryData: Omit<UserQuery, 'id' | 'createdAt' | 'status'> & { id?: string }): Promise<UserQuery> {
+    const queryId = queryData.id || 'query_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const newQuery: UserQuery = {
+      ...queryData,
+      id: queryId,
+      status: 'received',
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'userQueries', queryId), newQuery);
+    } catch (err) {
+      console.warn("Firestore query sync note, saving to local offline queue:", err);
+      // Fallback to local storage so user query is never lost
+      try {
+        const local = JSON.parse(localStorage.getItem('nda_user_queries') || '[]');
+        local.unshift(newQuery);
+        localStorage.setItem('nda_user_queries', JSON.stringify(local.slice(0, 50)));
+      } catch (localErr) {
+        console.error("Local storage error:", localErr);
+      }
+    }
+
+    return newQuery;
+  },
+
+  async getUserQueries(email?: string): Promise<UserQuery[]> {
+    try {
+      const snapshot = await getDocs(collection(db, 'userQueries'));
+      let list = snapshot.docs.map((doc: any) => doc.data() as UserQuery);
+      if (email) {
+        list = list.filter(q => q.email?.toLowerCase() === email.toLowerCase());
+      }
+      return list.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    } catch (err) {
+      try {
+        const local = JSON.parse(localStorage.getItem('nda_user_queries') || '[]');
+        return local;
+      } catch (e) {
+        return [];
+      }
+    }
+  }
+};
+

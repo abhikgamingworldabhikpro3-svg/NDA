@@ -139,3 +139,16 @@ export interface AIMessage {
   role: 'user' | 'model';
   parts: { text: string }[];
 }
+
+export interface UserQuery {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  category: 'Exam Guidance' | 'Syllabus Topic Request' | 'Defense News Inquiry' | 'Feature Suggestion' | 'Other';
+  query: string;
+  urgency?: 'Normal' | 'High' | 'Immediate';
+  status: 'received' | 'in-review' | 'answered';
+  aiAnswerPreview?: string;
+  createdAt: string;
+}

@@ -99,6 +99,13 @@ service cloud.firestore {
       allow update, delete: if false; // Audit logs should be immutable
     }
 
+    // --- USER QUERIES & ASPIRANT INQUIRIES ---
+    match /userQueries/{queryId} {
+      allow create: if incoming().createdAt is string && incoming().query is string;
+      allow read: if isAdmin() || (isSignedIn() && existing().email == request.auth.token.email);
+      allow update, delete: if isAdmin();
+    }
+
     // --- SUBCOLLECTIONS OF USERS ---
 
     // QUIZ ATTEMPTS

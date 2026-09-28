@@ -7,6 +7,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { ToastContainer, ToastMessage } from './components/Toast';
 
 // Pages
+import UnderConstruction from './pages/UnderConstruction';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Onboarding from './pages/Onboarding';
@@ -24,7 +25,7 @@ import Settings from './pages/Settings';
 import Admin from './pages/Admin';
 
 import { translations, LanguageCode } from './i18n/translations';
-import { Compass, RefreshCw, Zap } from 'lucide-react';
+import { Compass, RefreshCw, Zap, ShieldAlert, Clock, ArrowRight } from 'lucide-react';
 
 const MainAppContent: React.FC = () => {
   const { currentUser, userProfile, loading } = useAuth();
@@ -44,6 +45,19 @@ const MainAppContent: React.FC = () => {
 
   // Toast States
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
+
+  // Under Construction active till 14 Oct 2026
+  const targetLaunchTimestamp = new Date('2026-10-14T00:00:00').getTime();
+  const isUnderConstructionPeriod = new Date().getTime() < targetLaunchTimestamp;
+
+  // Preview Mode flag so admins & testers can access the portal freely
+  const [previewMode, setPreviewMode] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem('nda_preview_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
 
   // Track browser history navigation back/forward actions
   useEffect(() => {
@@ -84,6 +98,18 @@ const MainAppContent: React.FC = () => {
     setCurrentPath(path);
   };
 
+  const enablePreviewAndEnter = () => {
+    setPreviewMode(true);
+    try {
+      sessionStorage.setItem('nda_preview_mode', 'true');
+    } catch {}
+    if (currentUser) {
+      navigate('/dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
+
   // Helper function to extract path parameters (like articleId from /current-affairs/art_123)
   const getRouteParam = (pathPattern: string, actualPath: string) => {
     const patternParts = pathPattern.split('/');
@@ -104,14 +130,29 @@ const MainAppContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center items-center space-y-4">
+      <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col justify-center items-center space-y-4 font-sans">
         <RefreshCw className="h-8 w-8 text-indigo-500 animate-spin" />
         <p className="text-xs font-bold text-slate-400">Verifying secure student identity, establishing connection...</p>
       </div>
     );
   }
 
-  // PUBLIC FLOWS
+  // EXPLICIT UNDER CONSTRUCTION ROUTE OR DEFAULT LANDING TILL 14 OCT
+  if (
+    currentPath === '/under-construction' || 
+    (isUnderConstructionPeriod && !previewMode && (currentPath === '/' || !currentUser))
+  ) {
+    return (
+      <UnderConstruction 
+        onEnterApp={enablePreviewAndEnter} 
+        darkMode={darkMode} 
+        setDarkMode={setDarkMode} 
+        lang={lang} 
+      />
+    );
+  }
+
+  // PUBLIC FLOWS (When preview mode is engaged or user explicitly visits login/register)
   if (!currentUser) {
     if (currentPath === '/login') {
       return (
@@ -222,7 +263,11 @@ const MainAppContent: React.FC = () => {
           setLang={setLang} 
           darkMode={darkMode} 
           setDarkMode={setDarkMode}
-          onLogout={() => navigate('/')}
+          onLogout={() => {
+            sessionStorage.removeItem('nda_preview_mode');
+            setPreviewMode(false);
+            navigate('/');
+          }}
         />
       );
     }
@@ -257,16 +302,29 @@ const MainAppContent: React.FC = () => {
             <span className="text-xs font-black tracking-tight">{t('appName')}</span>
           </div>
           
-          <div className="hidden lg:flex items-center gap-1 text-[11px] text-slate-400 font-bold tracking-wider uppercase">
-            <Zap className="h-4 w-4 text-amber-500 shrink-0" />
-            <span>Active Study Channel: GAT Current Affairs</span>
+          <div className="hidden lg:flex items-center gap-3">
+            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-bold tracking-wider uppercase">
+              <Zap className="h-4 w-4 text-amber-500 shrink-0" />
+              <span>Active Study Channel: GAT Current Affairs</span>
+            </div>
+
+            {isUnderConstructionPeriod && (
+              <button
+                onClick={() => navigate('/under-construction')}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-800/60 hover:scale-105 transition cursor-pointer"
+                title="View 14 Oct Roadmap & Query Box"
+              >
+                <Clock className="h-3 w-3" />
+                <span>Launch Desk: 14 Oct (Query Box Active)</span>
+              </button>
+            )}
           </div>
 
           <div className="flex items-center gap-3">
             <PWAInstallButton />
             <button
               onClick={() => navigate('/settings')}
-              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 px-3.5 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-900 transition shadow-xs"
+              className="hidden sm:flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-slate-800 px-3.5 py-1.5 text-xs font-bold bg-white hover:bg-slate-50 dark:bg-slate-900 transition shadow-xs cursor-pointer"
             >
               Lang: {lang.toUpperCase()}
             </button>
