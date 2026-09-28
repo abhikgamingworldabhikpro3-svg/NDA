@@ -8,6 +8,7 @@ import { ToastContainer, ToastMessage } from './components/Toast';
 
 // Pages
 import UnderConstruction from './pages/UnderConstruction';
+import Launch from './pages/Launch';
 import Landing from './pages/Landing';
 import Auth from './pages/Auth';
 import Onboarding from './pages/Onboarding';
@@ -137,6 +138,16 @@ const MainAppContent: React.FC = () => {
     );
   }
 
+  // EXPLICIT LAUNCH NOTIFICATION & APPRECIATION ROUTE
+  if (currentPath === '/launch') {
+    return (
+      <Launch 
+        onBackToCommand={() => navigate('/')} 
+        onEnterApp={enablePreviewAndEnter} 
+      />
+    );
+  }
+
   // EXPLICIT UNDER CONSTRUCTION ROUTE OR DEFAULT LANDING TILL 14 OCT
   if (
     currentPath === '/under-construction' || 
@@ -145,6 +156,7 @@ const MainAppContent: React.FC = () => {
     return (
       <UnderConstruction 
         onEnterApp={enablePreviewAndEnter} 
+        onLaunchNow={() => navigate('/launch')}
         darkMode={darkMode} 
         setDarkMode={setDarkMode} 
         lang={lang} 

@@ -53,19 +53,24 @@ import {
   Globe,
   RadioTower,
   Sliders,
-  Maximize2
+  Maximize2,
+  Rocket
 } from 'lucide-react';
 import { aiService, userQueryService } from '../services/dbServices';
 import { UserQuery } from '../types';
+import Launch from './Launch';
 
 interface UnderConstructionProps {
   onEnterApp?: () => void;
+  onLaunchNow?: () => void;
   darkMode?: boolean;
   setDarkMode?: (val: boolean) => void;
   lang?: string;
 }
 
-export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
+export const UnderConstruction: React.FC<UnderConstructionProps> = ({ onEnterApp, onLaunchNow }) => {
+  // Launch Page View State
+  const [showLaunchPage, setShowLaunchPage] = useState(false);
   // Target Launch Date: October 14, 2026
   const targetDate = new Date('2026-10-14T00:00:00').getTime();
 
@@ -118,9 +123,8 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
   const [activeCodeLine, setActiveCodeLine] = useState(0);
 
   // Live Aspirant Visitor Counter States (Auto-Incrementing Daily Footfall)
-  const [liveCadets, setLiveCadets] = useState(1468);
-  const [dailyVisitors, setDailyVisitors] = useState(28492);
-  const [totalCadetsTrained, setTotalCadetsTrained] = useState(184950);
+  const [liveCadets, setLiveCadets] = useState(1469);
+  const [dailyVisitors, setDailyVisitors] = useState(36207);
   const [recentVisitorDelta, setRecentVisitorDelta] = useState<number | null>(null);
   const [isVisitorFlashing, setIsVisitorFlashing] = useState(false);
 
@@ -164,29 +168,25 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
           baseDaily = parsed.daily;
           baseTotal = parsed.total || baseTotal;
         } else {
-          // New day base: 14000 + hours * 650
           const hours = new Date().getHours();
-          baseDaily = 14000 + (hours * 720) + Math.floor(Math.random() * 250);
-          baseTotal = (parsed.total || baseTotal) + baseDaily;
+          baseDaily = 22000 + (hours * 920) + Math.floor(Math.random() * 250);
         }
       } catch (e) {
         // fallback
       }
     } else {
       const hours = new Date().getHours();
-      baseDaily = 18200 + (hours * 850) + Math.floor(Math.random() * 300);
-      baseTotal = 184900 + baseDaily;
+      baseDaily = 24000 + (hours * 960) + Math.floor(Math.random() * 300);
     }
 
     setDailyVisitors(baseDaily);
-    setTotalCadetsTrained(baseTotal);
 
     // Dynamic Live Cadet fluctuation (±1 to ±3 every 3.5 seconds)
     const liveInterval = setInterval(() => {
       setLiveCadets(prev => {
         const delta = Math.floor(Math.random() * 7) - 3; // -3 to +3
         const next = prev + delta;
-        return next < 1410 ? 1410 : next > 1540 ? 1540 : next;
+        return next < 1440 ? 1440 : next > 1510 ? 1510 : next;
       });
     }, 3500);
 
@@ -201,14 +201,11 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         try {
           localStorage.setItem('nda_daily_footfall', JSON.stringify({
             date: todayKey,
-            daily: updated,
-            total: baseTotal + updated
+            daily: updated
           }));
         } catch (e) {}
         return updated;
       });
-
-      setTotalCadetsTrained(prev => prev + increment);
 
       setTimeout(() => {
         setIsVisitorFlashing(false);
@@ -360,6 +357,16 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
     querySectionRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // Dedicated Launch & Early Access Appreciation View
+  if (showLaunchPage) {
+    return (
+      <Launch 
+        onBackToCommand={() => setShowLaunchPage(false)} 
+        onEnterApp={onEnterApp} 
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#090e0b] text-slate-100 flex flex-col font-sans selection:bg-amber-500 selection:text-black relative overflow-x-hidden bg-tactical-grid">
       
@@ -473,18 +480,21 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
               </div>
             </div>
 
-            <div className="hidden md:flex flex-col items-end text-right">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                DEFCON 1 READY
-              </span>
-              <span className="text-[10px] font-mono text-slate-400">
-                {currentZuluTime}
-              </span>
-            </div>
+            {/* Launch Now Button */}
+            <button
+              onClick={() => {
+                if (onLaunchNow) onLaunchNow();
+                else setShowLaunchPage(true);
+              }}
+              className="px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-black rounded-lg shadow-lg shadow-amber-500/20 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Rocket className="w-3.5 h-3.5 fill-black" />
+              <span>Launch Now</span>
+            </button>
+
             <button
               onClick={handleToggleTurbo}
-              className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded border transition-all flex items-center gap-1.5 ${
+              className={`hidden sm:flex px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded border transition-all items-center gap-1.5 ${
                 isTurbo 
                   ? 'bg-amber-500 text-black border-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.5)]' 
                   : 'bg-[#18241b] text-amber-400 border-amber-600/40 hover:bg-[#203024]'
@@ -530,8 +540,19 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             {/* Quick Tactical Action Bar */}
             <div className="pt-2 flex flex-wrap items-center gap-3">
               <button
-                onClick={scrollToQuery}
+                onClick={() => {
+                  if (onLaunchNow) onLaunchNow();
+                  else setShowLaunchPage(true);
+                }}
                 className="px-5 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider bg-amber-500 hover:bg-amber-400 text-black rounded-lg shadow-lg shadow-amber-500/20 flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <Rocket className="w-4 h-4 fill-black" />
+                Launch Now
+              </button>
+
+              <button
+                onClick={scrollToQuery}
+                className="px-4 py-2.5 text-xs sm:text-sm font-bold uppercase tracking-wider bg-[#162218] hover:bg-[#1f3022] text-slate-200 border border-[#2e4433] rounded-lg flex items-center gap-2 transition-all cursor-pointer"
               >
                 <Terminal className="w-4 h-4" />
                 Access Aspirant Query Desk
@@ -561,86 +582,77 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             
             {/* Card 1: Live Active Online */}
             <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-emerald-500/50 transition-all">
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
-                <span className="flex items-center gap-1">
-                  <Users className="w-3 h-3 text-emerald-400" />
+                <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                  <Users className="w-3.5 h-3.5" />
                   WAR ROOM CADETS
                 </span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 tracking-tight font-tabular flex items-baseline gap-1.5">
+              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-400 tracking-tight font-tabular mt-1">
                 {liveCadets.toLocaleString()}
-                <span className="text-[10px] text-slate-400 uppercase font-sans font-semibold">Active</span>
               </div>
-              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+              <div className="text-[11px] font-bold text-slate-200">
+                Active
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between border-t border-[#1f2d21] pt-1">
                 <span>Engaged in Vault</span>
-                <span className="text-emerald-400 font-mono">Live</span>
+                <span className="text-emerald-400 font-mono font-bold flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live
+                </span>
               </div>
             </div>
 
             {/* Card 2: Today's Daily Footfall (Auto-Incrementing) */}
             <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
-                <span className="flex items-center gap-1">
-                  <TrendingUp className="w-3 h-3 text-amber-400" />
+                <span className="flex items-center gap-1.5 text-amber-400 font-bold">
+                  <TrendingUp className="w-3.5 h-3.5" />
                   TODAY'S FOOTFALL
                 </span>
                 {recentVisitorDelta && (
-                  <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-600/60 px-1 rounded animate-bounce">
+                  <span className="text-[10px] font-mono font-bold text-amber-300 bg-amber-950/80 border border-amber-600/60 px-1.5 py-0.5 rounded animate-bounce">
                     +{recentVisitorDelta}
                   </span>
                 )}
               </div>
-              <div className={`text-2xl sm:text-3xl font-black font-mono text-amber-400 tracking-tight font-tabular flex items-baseline gap-1.5 transition-transform duration-200 ${
+              <div className={`text-2xl sm:text-3xl font-black font-mono text-amber-400 tracking-tight font-tabular mt-1 transition-transform duration-200 ${
                 isVisitorFlashing ? 'scale-105 text-amber-300' : ''
               }`}>
                 {dailyVisitors.toLocaleString()}
-                <span className="text-[10px] text-slate-400 uppercase font-sans font-semibold">Cadets</span>
               </div>
-              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+              <div className="text-[11px] font-bold text-slate-200">
+                Cadets
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between border-t border-[#1f2d21] pt-1">
                 <span>Across 28 States & UTs</span>
-                <span className="text-amber-400 font-mono">Auto +1</span>
+                <span className="text-amber-400 font-mono font-bold">Auto +1</span>
               </div>
             </div>
 
-            {/* Card 3: Cumulative Cadets Trained */}
+            {/* Card 3: GAT Query Speed */}
             <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-sky-500/50 transition-all">
               <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
-                <span className="flex items-center gap-1">
-                  <Award className="w-3 h-3 text-sky-400" />
-                  TOTAL CADETS TRAINED
-                </span>
-                <span className="text-[9px] font-mono text-sky-400 font-bold">ALL-TIME</span>
-              </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono text-sky-400 tracking-tight font-tabular flex items-baseline gap-1.5">
-                {totalCadetsTrained.toLocaleString()}
-                <span className="text-[10px] text-slate-400 uppercase font-sans font-semibold">Trained</span>
-              </div>
-              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
-                <span>Verified Aspirants</span>
-                <span className="text-sky-400 font-mono">99.4% Rate</span>
-              </div>
-            </div>
-
-            {/* Card 4: GAT Query Speed */}
-            <div className="bg-[#111a13] border border-[#283b2c] rounded-lg p-3.5 shadow-lg relative overflow-hidden group hover:border-amber-500/50 transition-all">
-              <div className="flex items-center justify-between text-[10px] font-mono text-slate-400 mb-1">
-                <span className="flex items-center gap-1">
-                  <Zap className="w-3 h-3 text-amber-400" />
+                <span className="flex items-center gap-1.5 text-sky-400 font-bold">
+                  <Zap className="w-3.5 h-3.5" />
                   DISPATCH LATENCY
                 </span>
                 <span className="text-[9px] font-mono text-emerald-400 font-bold">&lt; 1 SEC</span>
               </div>
-              <div className="text-2xl sm:text-3xl font-black font-mono text-slate-100 tracking-tight font-tabular flex items-baseline gap-1.5">
+              <div className="text-2xl sm:text-3xl font-black font-mono text-slate-100 tracking-tight font-tabular mt-1">
                 0.82 <span className="text-xs text-amber-400 font-bold">sec</span>
               </div>
-              <div className="text-[10px] text-slate-400 mt-1 flex items-center justify-between border-t border-[#1f2d21] pt-1">
-                <span>Neural Engine Speed</span>
-                <span className="text-emerald-400 font-mono">Instant</span>
+              <div className="text-[11px] font-bold text-slate-200">
+                Neural Engine Speed
+              </div>
+              <div className="text-[10px] text-slate-400 mt-1.5 flex items-center justify-between border-t border-[#1f2d21] pt-1">
+                <span>UPSC GAT Resolution</span>
+                <span className="text-emerald-400 font-mono font-bold">Instant</span>
               </div>
             </div>
 
@@ -1475,6 +1487,17 @@ export const UnderConstruction: React.FC<UnderConstructionProps> = () => {
         >
           <Zap className="w-4 h-4" />
           <span>Boost</span>
+        </button>
+
+        <button
+          onClick={() => {
+            if (onLaunchNow) onLaunchNow();
+            else setShowLaunchPage(true);
+          }}
+          className="flex flex-col items-center gap-0.5 text-[10px] text-amber-400 font-bold uppercase tracking-wider"
+        >
+          <Rocket className="w-4 h-4 fill-amber-400" />
+          <span>Launch</span>
         </button>
 
         <button
