@@ -42,37 +42,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
-      setCurrentUser(user);
-      if (user) {
-        let profile = await userService.getUserProfile(user.uid);
-        if (!profile) {
-          // New user creation (e.g. first Google Sign-In)
-          const isBootstrapAdmin = user.email === 'abhikgamingworldabhikpro3@gmail.com';
-          const newProfile: UserProfile = {
-            uid: user.uid,
-            name: user.displayName || "Aspirant",
-            email: user.email || "",
-            role: isBootstrapAdmin ? 'admin' : 'student',
-            targetExam: 'NDA',
-            targetAttempt: 'Both',
-            preferredLanguage: 'en',
-            dailyTarget: 10,
-            streak: 0,
-            onboardingCompleted: false,
-            createdAt: new Date().toISOString()
-          };
-          await userService.createUserProfile(newProfile);
-          profile = newProfile;
+    let timer: NodeJS.Timeout;
+    try {
+      const unsubscribe = onAuthStateChanged(auth, async (user: User | null) => {
+        setCurrentUser(user);
+        if (user) {
+          try {
+            let profile = await userService.getUserProfile(user.uid);
+            if (!profile) {
+              const isBootstrapAdmin = user.email === 'abhikgamingworldabhikpro3@gmail.com';
+              const newProfile: UserProfile = {
+                uid: user.uid,
+                name: user.displayName || "Aspirant",
+                email: user.email || "",
+                role: isBootstrapAdmin ? 'admin' : 'student',
+                targetExam: 'NDA',
+                targetAttempt: 'Both',
+                preferredLanguage: 'en',
+                dailyTarget: 10,
+                streak: 0,
+                onboardingCompleted: false,
+                createdAt: new Date().toISOString()
+              };
+              await userService.createUserProfile(newProfile);
+              profile = newProfile;
+            }
+            setUserProfile(profile);
+          } catch (e) {
+            console.warn("User profile fetch offline fallback:", e);
+          }
+        } else {
+          setUserProfile(null);
         }
-        setUserProfile(profile);
-      } else {
-        setUserProfile(null);
-      }
-      setLoading(false);
-    });
+        setLoading(false);
+      }, (error) => {
+        console.warn("Auth state offline/error:", error);
+        setLoading(false);
+      });
 
-    return unsubscribe;
+      // Safety timeout for offline / server down state
+      timer = setTimeout(() => {
+        setLoading(false);
+      }, 800);
+
+      return () => {
+        unsubscribe();
+        clearTimeout(timer);
+      };
+    } catch (err) {
+      console.warn("Firebase Auth init error:", err);
+      setLoading(false);
+    }
   }, []);
 
   const signInWithGoogle = async () => {

@@ -7,6 +7,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { ToastContainer, ToastMessage } from './components/Toast';
 
 // Pages
+import ServerDown from './pages/ServerDown';
 import UnderConstruction from './pages/UnderConstruction';
 import Launch from './pages/Launch';
 import Landing from './pages/Landing';
@@ -117,15 +118,6 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // EXPLICIT LAUNCH NOTIFICATION & APPRECIATION ROUTE
-  if (currentPath === '/launch') {
-    return (
-      <Launch 
-        onBackToCommand={() => navigate('/')} 
-      />
-    );
-  }
-
   // EXPLICIT ADMIN SECTION ROUTE (Guarded by Secret Code / Clearance Gate)
   if (currentPath === '/admin') {
     return (
@@ -135,17 +127,14 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // EXPLICIT UNDER CONSTRUCTION ROUTE OR DEFAULT LANDING TILL 14 OCT (Demo not accessible)
-  if (isUnderConstructionPeriod || currentPath === '/under-construction' || currentPath === '/' || !currentUser) {
-    return (
-      <UnderConstruction 
-        onLaunchNow={() => navigate('/launch')}
-        darkMode={darkMode} 
-        setDarkMode={setDarkMode} 
-        lang={lang} 
-      />
-    );
-  }
+  // ALL OTHER ROUTES: SERVER DOWN (503 Service Unavailable / Defence Outage)
+  return (
+    <ServerDown 
+      onRetry={() => window.location.reload()}
+      onAdminAccess={() => navigate('/admin')}
+      onViewLaunch={() => navigate('/admin')}
+    />
+  );
 
   // PUBLIC FLOWS (When preview mode is engaged or user explicitly visits login/register)
   if (!currentUser) {
@@ -176,15 +165,16 @@ const MainAppContent: React.FC = () => {
   }
 
   // ONBOARDING FLOW
-  if (userProfile && !userProfile.onboardingCompleted) {
+  if (userProfile?.onboardingCompleted === false) {
     return <Onboarding onComplete={() => navigate('/dashboard')} />;
   }
 
   // ACTIVE EXAM WORKSPACE OVERLAY (Hides all surrounding sidebar/nav for absolute focus)
   if (activeQuiz) {
+    const currentQuizConfig: QuizConfig = activeQuiz as QuizConfig;
     return (
       <div className={`${darkMode ? 'dark' : ''} min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col`}>
-        <QuizActive config={activeQuiz} onClose={() => setActiveQuiz(null)} />
+        <QuizActive config={currentQuizConfig} onClose={() => setActiveQuiz(null)} />
         <ToastContainer toasts={toasts} removeToast={removeToast} />
         <OfflineIndicator />
       </div>
