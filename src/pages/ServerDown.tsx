@@ -447,7 +447,7 @@ export const ServerDown: React.FC<ServerDownProps> = ({
             <Shield className="w-5 h-5 text-amber-400 shrink-0" />
             <div>
               <div className="font-bold text-white">Academy Staff & Officer Security Gateway</div>
-              <div className="text-[11px] text-slate-400">Authorized personnel may enter the Admin Section using Commander Secret Code (e.g. 1947).</div>
+              <div className="text-[11px] text-slate-400">Restricted zone. Authorized academy officers may authenticate with security clearance passcode.</div>
             </div>
           </div>
 

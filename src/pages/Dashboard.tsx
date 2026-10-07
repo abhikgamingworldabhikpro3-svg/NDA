@@ -4,9 +4,10 @@ import {
   articleService, 
   quizService, 
   revisionService, 
-  questionService 
+  questionService,
+  dailyPdfService
 } from '../services/dbServices';
-import { CurrentAffair, Question, QuizAttempt, RevisionItem } from '../types';
+import { CurrentAffair, Question, QuizAttempt, RevisionItem, DailyPdf } from '../types';
 import { 
   Zap, 
   Target, 
@@ -19,7 +20,9 @@ import {
   AlertCircle,
   Clock,
   ThumbsUp,
-  Brain
+  Brain,
+  FileDown,
+  FileText
 } from 'lucide-react';
 import { translations, LanguageCode } from '../i18n/translations';
 import { getRecommendedArticles } from '../data/seedData';
@@ -37,41 +40,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [revisions, setRevisions] = useState<RevisionItem[]>([]);
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
+  const [dailyPdfs, setDailyPdfs] = useState<DailyPdf[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       if (!userProfile) return;
       try {
-        let [pubArticles, allQuestions, userRevs, userAttempts] = await Promise.all([
+        let [pubArticles, allQuestions, userRevs, userAttempts, allPdfs] = await Promise.all([
           articleService.getPublishedArticles(),
           questionService.getAllQuestions(),
           revisionService.getUserRevisions(userProfile.uid),
-          quizService.getUserQuizAttempts(userProfile.uid)
+          quizService.getUserQuizAttempts(userProfile.uid),
+          dailyPdfService.getDailyPdfs()
         ]);
 
-        // Auto-seed if database is empty on load
-        if ((!pubArticles || pubArticles.length === 0) && (!allQuestions || allQuestions.length === 0)) {
-          try {
-            const { seedSampleFirestoreData } = await import('../data/seedData');
-            const seeded = await seedSampleFirestoreData();
-            if (seeded) {
-              [pubArticles, allQuestions, userRevs, userAttempts] = await Promise.all([
-                articleService.getPublishedArticles(),
-                questionService.getAllQuestions(),
-                revisionService.getUserRevisions(userProfile.uid),
-                quizService.getUserQuizAttempts(userProfile.uid)
-              ]);
-            }
-          } catch (seedErr) {
-            console.error("Auto-seeding failed:", seedErr);
-          }
+        const { seedSampleFirestoreData, sampleArticles, sampleQuestions } = await import('../data/seedData');
+        
+        let fetchedArticles = pubArticles || [];
+        let fetchedQuestions = allQuestions || [];
+
+        const hasOct2026 = fetchedArticles.some(a => a.id.includes('oct2026') || a.id.includes('2026'));
+
+        if (!hasOct2026 || fetchedArticles.length < sampleArticles.length) {
+          const articleIds = new Set(fetchedArticles.map(a => a.id));
+          const missingArticles = sampleArticles.filter(a => !articleIds.has(a.id));
+          fetchedArticles = [...missingArticles, ...fetchedArticles];
         }
 
-        setArticles(pubArticles || []);
-        setQuestions(allQuestions || []);
+        if (fetchedQuestions.length < sampleQuestions.length) {
+          const qIds = new Set(fetchedQuestions.map(q => q.id));
+          const missingQ = sampleQuestions.filter(q => !qIds.has(q.id));
+          fetchedQuestions = [...missingQ, ...fetchedQuestions];
+        }
+
+        // Trigger background seeding to guarantee Firestore persistence
+        seedSampleFirestoreData().catch(() => {});
+
+        setArticles(fetchedArticles);
+        setQuestions(fetchedQuestions);
         setRevisions(userRevs || []);
         setAttempts(userAttempts || []);
+        setDailyPdfs(allPdfs || []);
       } catch (err) {
         console.error("Dashboard load failed:", err);
       } finally {
@@ -80,6 +90,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
     };
     loadDashboardData();
   }, [userProfile]);
+
+  const handleDownloadPdf = (pdf: DailyPdf) => {
+    try {
+      const linkSource = pdf.base64Data;
+      const downloadLink = document.createElement("a");
+      downloadLink.href = linkSource.startsWith('data:') ? linkSource : `data:application/pdf;base64,${linkSource}`;
+      downloadLink.download = pdf.fileName;
+      downloadLink.click();
+    } catch (e) {
+      alert("Failed to download PDF.");
+    }
+  };
 
   // Calculates today's completed question counts
   const getTodayAttemptedCount = () => {
@@ -325,6 +347,65 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
             <span className="text-xs font-bold block text-slate-800 dark:text-slate-200">{t('askAI')}</span>
           </button>
         </div>
+      </section>
+
+      {/* HINDUSTAN TIMES DAILY NEWSPAPER DESK */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
+            <FileText className="h-4 w-4 text-blue-500" />
+            <span>Hindustan Times Daily PDFs</span>
+          </h3>
+          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
+            In-Memory Secure Hub
+          </span>
+        </div>
+
+        {dailyPdfs.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-6 rounded-2xl text-center text-xs text-slate-500">
+            No Daily Hindustan Times PDFs published yet. Check back later!
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {dailyPdfs.slice(0, 4).map((pdf) => (
+              <div 
+                key={pdf.id}
+                className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl flex flex-col justify-between gap-4 transition duration-150 shadow-xs hover:border-blue-400/50"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 rounded-full font-bold border border-blue-200 dark:border-blue-900/30">
+                      {pdf.date}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono font-bold">{pdf.fileSize}</span>
+                  </div>
+                  
+                  <h4 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-wide">
+                    {pdf.title}
+                  </h4>
+                  
+                  <p className="text-[10px] text-slate-400 font-mono truncate">
+                    📄 {pdf.fileName}
+                  </p>
+
+                  {pdf.notes && (
+                    <div className="text-[11px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-850 line-clamp-3 leading-relaxed">
+                      {pdf.notes}
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => handleDownloadPdf(pdf)}
+                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-black font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  <span>Download HT Daily PDF</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* CONTINUE LEARNING CARD LIST */}

@@ -6,10 +6,11 @@ import {
   reportService, 
   auditService, 
   aiService,
-  userQueryService 
+  userQueryService,
+  dailyPdfService
 } from '../services/dbServices';
 import { seedSampleFirestoreData } from '../data/seedData';
-import { CurrentAffair, Question, QuestionReport, AuditLog, UserQuery } from '../types';
+import { CurrentAffair, Question, QuestionReport, AuditLog, UserQuery, DailyPdf } from '../types';
 import { 
   Lock, 
   Unlock,
@@ -69,16 +70,24 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
   const [reports, setReports] = useState<QuestionReport[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [userQueries, setUserQueries] = useState<UserQuery[]>([]);
+  const [dailyPdfs, setDailyPdfs] = useState<DailyPdf[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Tab management
-  const [activeTab, setActiveTab] = useState<'articles' | 'create' | 'reports' | 'queries' | 'logs'>('articles');
+  const [activeTab, setActiveTab] = useState<'articles' | 'create' | 'reports' | 'queries' | 'logs' | 'daily-pdf'>('articles');
 
   // New Article Form state driven by AI
   const [rawContent, setRawContent] = useState('');
   const [sourceName, setSourceName] = useState('Press Information Bureau (PIB)');
   const [sourceUrl, setSourceUrl] = useState('');
   const [processingAI, setProcessingAI] = useState(false);
+
+  // New Daily PDF upload form state
+  const [pdfTitle, setPdfTitle] = useState('');
+  const [pdfDate, setPdfDate] = useState(new Date().toISOString().split('T')[0]);
+  const [pdfNotes, setPdfNotes] = useState('');
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
 
   // Edited Article result state (Ready for edits and publication)
   const [aiResult, setAiResult] = useState<Partial<CurrentAffair> | null>(null);
@@ -87,18 +96,20 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const [pubArticles, allQuestions, allReports, allLogs, allQueries] = await Promise.all([
+      const [pubArticles, allQuestions, allReports, allLogs, allQueries, allPdfs] = await Promise.all([
         articleService.getPublishedArticles(),
         questionService.getAllQuestions(),
         reportService.getAllReports(),
         auditService.getAuditLogs(),
-        userQueryService.getUserQueries()
+        userQueryService.getUserQueries(),
+        dailyPdfService.getDailyPdfs()
       ]);
       setArticles(pubArticles || []);
       setQuestions(allQuestions || []);
       setReports(allReports || []);
       setAuditLogs(allLogs || []);
       setUserQueries(allQueries || []);
+      setDailyPdfs(allPdfs || []);
     } catch (err) {
       console.error("Admin loader error:", err);
     } finally {
@@ -130,20 +141,8 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
         } catch {}
       }, 500);
     } else {
-      setAuthError('Incorrect Secret Code. Access denied. Enter valid Commander Clearance code (e.g. 1947).');
+      setAuthError('Access Denied: Invalid security clearance passcode.');
     }
-  };
-
-  // Instant Commander Unlock
-  const handleInstantCommanderUnlock = () => {
-    setAuthSuccess(true);
-    setAuthError(null);
-    setTimeout(() => {
-      setIsAuthorized(true);
-      try {
-        sessionStorage.setItem('nda_admin_passcode_authenticated', 'true');
-      } catch {}
-    }, 400);
   };
 
   // Lock Console
@@ -154,6 +153,58 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
     try {
       sessionStorage.removeItem('nda_admin_passcode_authenticated');
     } catch {}
+  };
+
+  // Upload Hindustan Times daily PDF without saving in firebase storage
+  const handlePdfUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pdfFile) {
+      alert("Please select a valid Hindustan Times PDF file first.");
+      return;
+    }
+    setIsUploadingPdf(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64 = reader.result as string;
+          const newPdf = await dailyPdfService.uploadDailyPdf({
+            title: pdfTitle || 'Hindustan Times GAT Daily Special',
+            fileName: pdfFile.name,
+            fileSize: (pdfFile.size / (1024 * 1024)).toFixed(2) + ' MB',
+            date: pdfDate,
+            base64Data: base64,
+            notes: pdfNotes
+          });
+          setDailyPdfs(prev => [newPdf, ...prev]);
+          alert("Success! Hindustan Times PDF uploaded successfully to custom portal storage.");
+          setPdfTitle('');
+          setPdfFile(null);
+          setPdfNotes('');
+        } catch (uploadErr) {
+          console.error(uploadErr);
+          alert("Failed during PDF saving.");
+        } finally {
+          setIsUploadingPdf(false);
+        }
+      };
+      reader.readAsDataURL(pdfFile);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to parse file.");
+      setIsUploadingPdf(false);
+    }
+  };
+
+  const handleDeletePdf = async (id: string) => {
+    if (confirm("Are you sure you want to delete this Daily PDF?")) {
+      try {
+        await dailyPdfService.deleteDailyPdf(id);
+        setDailyPdfs(prev => prev.filter(p => p.id !== id));
+      } catch (err) {
+        console.error(err);
+      }
+    }
   };
 
   // Seeder trigger helper
@@ -284,9 +335,9 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
             <div>
               <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1.5 flex items-center justify-between">
                 <span className="flex items-center gap-1">
-                  <KeyRound className="w-3.5 h-3.5 text-amber-400" /> Secret Admin Code / PIN
+                  <KeyRound className="w-3.5 h-3.5 text-amber-400" /> Secret Clearance Passcode
                 </span>
-                <span className="text-[10px] font-mono text-amber-400/80 font-normal">Default: 1947</span>
+                <span className="text-[10px] font-mono text-slate-500">PROTECTED GATEWAY</span>
               </label>
 
               <div className="relative">
@@ -297,7 +348,7 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
                     setSecretCodeInput(e.target.value);
                     setAuthError(null);
                   }}
-                  placeholder="Enter secret code (e.g. 1947 or COMMANDER)"
+                  placeholder="Enter secret clearance passcode..."
                   className="w-full bg-[#070c08] border border-[#2a452f] focus:border-amber-500 text-slate-100 text-sm py-3 px-4 pr-10 rounded-xl outline-none tracking-widest font-mono transition-all"
                   autoFocus
                 />
@@ -333,15 +384,6 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
             >
               <Unlock className="w-4 h-4" />
               <span>Authorize & Enter Admin Section</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleInstantCommanderUnlock}
-              disabled={authSuccess}
-              className="w-full py-2.5 bg-[#142217] hover:bg-[#1a2d1e] text-amber-400 border border-amber-600/30 text-xs font-bold uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-            >
-              <span>⚡ Authorized Commander 1-Click Pass</span>
             </button>
           </form>
 
@@ -489,6 +531,14 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
           }`}
         >
           Audit History
+        </button>
+        <button 
+          onClick={() => setActiveTab('daily-pdf')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition shrink-0 flex items-center gap-1.5 cursor-pointer ${
+            activeTab === 'daily-pdf' ? 'bg-amber-500 text-black shadow-md' : 'text-slate-400 hover:text-white bg-[#111c13]'
+          }`}
+        >
+          <FileText className="h-3.5 w-3.5 text-blue-400" /> Hindustan Times PDFs ({dailyPdfs.length})
         </button>
       </div>
 
@@ -716,6 +766,128 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
                 </div>
               ))
             )}
+          </div>
+        </section>
+      )}
+
+      {/* Hindustan Times Daily PDF Tab */}
+      {activeTab === 'daily-pdf' && (
+        <section className="space-y-6">
+          <div className="bg-[#111c13] border border-[#233827] rounded-2xl p-5 sm:p-6 space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#233827] pb-3">
+              <FileText className="h-5 w-5 text-blue-400" />
+              <div>
+                <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">Hindustan Times PDF Upload Console</h3>
+                <p className="text-[11px] text-slate-400">Upload daily current affairs PDFs. These files are stored as secure database Base64 payloads and **will not** be saved in Firebase Storage.</p>
+              </div>
+            </div>
+
+            <form onSubmit={handlePdfUpload} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Document Title *
+                  </label>
+                  <input 
+                    type="text"
+                    required
+                    value={pdfTitle}
+                    onChange={(e) => setPdfTitle(e.target.value)}
+                    placeholder="e.g. Hindustan Times - 7 October 2026"
+                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Publication Date *
+                  </label>
+                  <input 
+                    type="date"
+                    required
+                    value={pdfDate}
+                    onChange={(e) => setPdfDate(e.target.value)}
+                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Choose Hindustan Times PDF *
+                  </label>
+                  <input 
+                    type="file"
+                    required
+                    accept=".pdf"
+                    onChange={(e) => setPdfFile(e.target.files ? e.target.files[0] : null)}
+                    className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#1c2e20] file:text-blue-300 hover:file:bg-[#253f2a] cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 flex flex-col justify-between">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Key Highlights & Study Notes
+                  </label>
+                  <textarea 
+                    rows={4}
+                    value={pdfNotes}
+                    onChange={(e) => setPdfNotes(e.target.value)}
+                    placeholder="Provide quick GAT bullet points or topic summaries contained in this PDF..."
+                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs p-3 rounded-xl outline-none focus:border-blue-400"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isUploadingPdf}
+                  className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isUploadingPdf ? 'animate-spin' : ''}`} />
+                  <span>{isUploadingPdf ? "Encoding & Uploading..." : "Publish HT PDF Live"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="space-y-3">
+            <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Currently Published Hindustan Times PDFs</h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {dailyPdfs.length === 0 ? (
+                <div className="col-span-2 p-8 text-center text-slate-500 text-xs bg-[#111c13] border border-[#233827] rounded-2xl">
+                  No Daily PDFs published yet.
+                </div>
+              ) : (
+                dailyPdfs.map((pdf) => (
+                  <div key={pdf.id} className="bg-[#111c13] border border-[#233827] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-2">
+                      <button
+                        onClick={() => handleDeletePdf(pdf.id)}
+                        className="text-rose-400 hover:text-rose-300 p-1.5 rounded bg-rose-950/20 hover:bg-rose-900/40 border border-rose-500/20 cursor-pointer transition"
+                        title="Delete PDF"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+
+                    <div className="space-y-1 pr-8">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-500/20 font-bold">{pdf.date}</span>
+                        <span className="text-[10px] text-slate-400 font-mono">{pdf.fileSize}</span>
+                      </div>
+                      <h5 className="text-xs font-black text-white uppercase">{pdf.title}</h5>
+                      <p className="text-[11px] text-slate-400 font-mono italic truncate">{pdf.fileName}</p>
+                      {pdf.notes && (
+                        <p className="text-[11px] text-slate-300 bg-[#09100a] p-2 rounded-lg border border-[#1e3322] mt-2 leading-relaxed">
+                          {pdf.notes}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </section>
       )}

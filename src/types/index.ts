@@ -152,3 +152,14 @@ export interface UserQuery {
   aiAnswerPreview?: string;
   createdAt: string;
 }
+
+export interface DailyPdf {
+  id: string;
+  title: string;
+  fileName: string;
+  fileSize: string;
+  date: string;
+  base64Data: string;
+  notes?: string;
+  createdAt: string;
+}

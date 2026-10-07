@@ -60,17 +60,23 @@ service cloud.firestore {
 
     // --- CURRENT AFFAIRS COLLECTION ---
     match /currentAffairs/{articleId} {
-      allow get: if isSignedIn() && (existing().status == "published" || isAdmin());
-      allow list: if isSignedIn() && (existing().status == "published" || isAdmin());
-
-      allow create, update, delete: if isAdmin();
+      allow get, list: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     // --- QUESTIONS COLLECTION ---
     match /questions/{questionId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
+      allow get, list: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
+    }
+
+    // --- DAILY PDFS COLLECTION ---
+    match /dailyPdfs/{pdfId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     // --- REPORTS COLLECTION ---

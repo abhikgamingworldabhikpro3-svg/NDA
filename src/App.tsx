@@ -58,6 +58,12 @@ const MainAppContent: React.FC = () => {
       setCurrentPath(window.location.pathname);
     };
     window.addEventListener('popstate', handlePopState);
+
+    // Auto-seed October 7, 2026 Current Affairs into Firestore
+    import('./data/seedData').then(({ seedSampleFirestoreData }) => {
+      seedSampleFirestoreData().catch(err => console.warn("App auto-seed:", err));
+    });
+
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
@@ -127,14 +133,37 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // ALL OTHER ROUTES: SERVER DOWN (503 Service Unavailable / Defence Outage)
-  return (
-    <ServerDown 
-      onRetry={() => window.location.reload()}
-      onAdminAccess={() => navigate('/admin')}
-      onViewLaunch={() => navigate('/admin')}
-    />
-  );
+  // EXPLICIT SERVER DOWN OUTAGE ROUTE (Optional maintenance mode)
+  if (currentPath === '/server-down') {
+    return (
+      <ServerDown 
+        onRetry={() => navigate('/')}
+        onAdminAccess={() => navigate('/admin')}
+        onViewLaunch={() => navigate('/launch')}
+      />
+    );
+  }
+
+  // EXPLICIT LAUNCH NOTIFICATION & APPRECIATION ROUTE
+  if (currentPath === '/launch') {
+    return (
+      <Launch 
+        onBackToCommand={() => navigate('/')} 
+      />
+    );
+  }
+
+  // EXPLICIT UNDER CONSTRUCTION ROUTE
+  if (currentPath === '/under-construction') {
+    return (
+      <UnderConstruction 
+        onLaunchNow={() => navigate('/launch')}
+        darkMode={darkMode} 
+        setDarkMode={setDarkMode} 
+        lang={lang} 
+      />
+    );
+  }
 
   // PUBLIC FLOWS (When preview mode is engaged or user explicitly visits login/register)
   if (!currentUser) {

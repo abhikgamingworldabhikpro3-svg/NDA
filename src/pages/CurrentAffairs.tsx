@@ -85,22 +85,26 @@ export const CurrentAffairs: React.FC<CurrentAffairsProps> = ({
     const fetchArticlesAndBookmarks = async () => {
       setLoading(true);
       try {
-        let pubArticles = await articleService.getPublishedArticles(category === 'All' ? undefined : category);
+        const { seedSampleFirestoreData, sampleArticles } = await import('../data/seedData');
+        let pubArticles = await articleService.getPublishedArticles(category === 'All' ? undefined : category) || [];
         
-        // Auto-seed if empty on load
-        if (category === 'All' && (!pubArticles || pubArticles.length === 0)) {
-          try {
-            const { seedSampleFirestoreData } = await import('../data/seedData');
-            const seeded = await seedSampleFirestoreData();
-            if (seeded) {
-              pubArticles = await articleService.getPublishedArticles(undefined);
-            }
-          } catch (seedErr) {
-            console.error("Auto-seeding in browser failed:", seedErr);
-          }
+        // Check if October 7, 2026 articles are present
+        const hasOct2026 = pubArticles.some(a => a.id.includes('oct2026') || a.id.includes('2026'));
+        
+        if (!hasOct2026 || pubArticles.length < sampleArticles.length) {
+          // Merge local seed articles with fetched articles to guarantee instant display
+          const existingIds = new Set(pubArticles.map(a => a.id));
+          const missingLocal = sampleArticles.filter(a => !existingIds.has(a.id) && (category === 'All' || a.category === category));
+          pubArticles = [...missingLocal, ...pubArticles];
+
+          // Trigger background upload to Firestore
+          seedSampleFirestoreData().then(async () => {
+            const fresh = await articleService.getPublishedArticles(category === 'All' ? undefined : category);
+            if (fresh && fresh.length >= sampleArticles.length) setArticles(fresh);
+          }).catch(() => {});
         }
 
-        setArticles(pubArticles || []);
+        setArticles(pubArticles);
 
         if (userProfile) {
           const userBookmarks = await bookmarkService.getUserBookmarks(userProfile.uid);

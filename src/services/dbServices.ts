@@ -28,7 +28,8 @@ import {
   PriorityType,
   AttemptType,
   AppLanguage,
-  UserQuery
+  UserQuery,
+  DailyPdf
 } from '../types';
 
 // ==========================================
@@ -670,4 +671,82 @@ export const userQueryService = {
     } catch (e) {}
   }
 };
+
+// ==========================================
+// 11. DAILY HINDUSTAN TIMES PDF PORTAL SERVICE
+// ==========================================
+export const dailyPdfService = {
+  async uploadDailyPdf(pdf: Omit<DailyPdf, 'id' | 'createdAt'>): Promise<DailyPdf> {
+    const pdfId = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    const newPdf: DailyPdf = {
+      ...pdf,
+      id: pdfId,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      await setDoc(doc(db, 'dailyPdfs', pdfId), newPdf);
+    } catch (err) {
+      console.warn("Firestore PDF sync note, saving to local storage:", err);
+    }
+
+    // Save to local storage for instant offline backup
+    try {
+      const local = JSON.parse(localStorage.getItem('nda_daily_pdfs') || '[]');
+      local.unshift(newPdf);
+      localStorage.setItem('nda_daily_pdfs', JSON.stringify(local.slice(0, 30)));
+    } catch (e) {}
+
+    return newPdf;
+  },
+
+  async getDailyPdfs(): Promise<DailyPdf[]> {
+    try {
+      const snapshot = await getDocs(collection(db, 'dailyPdfs'));
+      let list = snapshot.docs.map((doc: any) => doc.data() as DailyPdf);
+      
+      // If Firestore empty, seed default Hindustan Times preview PDF
+      if (list.length === 0) {
+        list = this.getDefaultPdfs();
+      }
+
+      return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } catch (err) {
+      try {
+        const local = JSON.parse(localStorage.getItem('nda_daily_pdfs') || '[]');
+        if (local.length > 0) return local;
+      } catch (e) {}
+      return this.getDefaultPdfs();
+    }
+  },
+
+  async deleteDailyPdf(id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, 'dailyPdfs', id));
+    } catch (err) {
+      console.warn("Firestore delete daily PDF failed:", err);
+    }
+    try {
+      const local: DailyPdf[] = JSON.parse(localStorage.getItem('nda_daily_pdfs') || '[]');
+      const filtered = local.filter(p => p.id !== id);
+      localStorage.setItem('nda_daily_pdfs', JSON.stringify(filtered));
+    } catch (e) {}
+  },
+
+  getDefaultPdfs(): DailyPdf[] {
+    return [
+      {
+        id: "pdf_sample_ht_1",
+        title: "Hindustan Times GAT Special Edition",
+        fileName: "hindustan_times_gat_spec_20261007.pdf",
+        fileSize: "1.42 MB",
+        date: "2026-10-07",
+        base64Data: "JVBERi0xLjQKJSDi48clbXkgZGVtbyBQREYgYmFzZTY0IGRhdGEgZm9yIEhpbmR1c3RhbiBUaW1lcyBHYXQgU3BlY2lhbC4gVGhpcyBpcyBhIHNlY3VyZSBpbi1tZW1vcnkgcGFyc2VkIGZpbGUgdGhhdCBkb2VzIG5vdCB1c2UgRmlyZWJhc2UgU3RvcmFnZS4=",
+        notes: "Today's highlights: Francis Halzen wins 2026 Nobel Prize in Physics for IceCube; Rajnath Singh launches INS Surya FSS-1; Cabinet clears ₹10,000-Crore SME Growth Fund.",
+        createdAt: "2026-10-07T05:30:00Z"
+      }
+    ];
+  }
+};
+
 
