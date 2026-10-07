@@ -356,9 +356,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
             <FileText className="h-4 w-4 text-blue-500" />
             <span>Hindustan Times Daily PDFs</span>
           </h3>
-          <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded-full uppercase tracking-wider">
-            In-Memory Secure Hub
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handleAction('/admin?tab=daily-pdf')}
+              className="text-[10px] font-extrabold text-blue-600 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 border border-blue-200 dark:border-blue-800/40 px-2.5 py-1 rounded-lg uppercase tracking-wider flex items-center gap-1 cursor-pointer transition shadow-xs"
+              title="Admin: Open upload console"
+            >
+              <span>+ Admin Upload PDF</span>
+            </button>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-950/40 px-2 py-0.5 rounded-full uppercase tracking-wider hidden sm:inline">
+              In-Memory Secure Hub
+            </span>
+          </div>
         </div>
 
         {dailyPdfs.length === 0 ? (

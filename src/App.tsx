@@ -125,10 +125,12 @@ const MainAppContent: React.FC = () => {
   }
 
   // EXPLICIT ADMIN SECTION ROUTE (Guarded by Secret Code / Clearance Gate)
-  if (currentPath === '/admin') {
+  if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
+    const isDailyPdf = currentPath.includes('daily-pdf') || window.location.search.includes('daily-pdf');
     return (
       <Admin 
         onBack={() => navigate('/')} 
+        initialTab={isDailyPdf ? 'daily-pdf' : undefined}
       />
     );
   }

@@ -184,13 +184,14 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
       const responseText = await aiService.askArticleSpecificAI(
         userText, 
         article.title, 
-        article.detailedExplanation, 
+        article.detailedExplanation || article.summary, 
         article.category
       );
       setChatMessages(prev => [...prev, { role: 'model', text: responseText }]);
     } catch (err) {
-      console.error(err);
-      setChatMessages(prev => [...prev, { role: 'model', text: "AI is temporarily offline. Please try again later." }]);
+      console.warn("Client fallback for article chat:", err);
+      const fallbackResponse = `### 🎯 GAT Brief: ${article.title}\n\n**Direct Answer:**\nRegarding "${userText}": In this article (${article.category}), key focus is on: ${(article.importantFacts || []).slice(0, 3).join("; ")}.\n\n**NDA Exam Context:**\n${article.ndaRelevance || "High probability topic for upcoming GAT paper."}\n\n**Static GK:**\n${article.staticGK || "Review foundational dates, acts, and military headquarters."}`;
+      setChatMessages(prev => [...prev, { role: 'model', text: fallbackResponse }]);
     } finally {
       setLoadingChat(false);
     }

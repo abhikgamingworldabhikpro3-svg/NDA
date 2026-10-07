@@ -45,9 +45,10 @@ import {
 
 interface AdminProps {
   onBack?: () => void;
+  initialTab?: 'articles' | 'create' | 'reports' | 'queries' | 'logs' | 'daily-pdf';
 }
 
-export const Admin: React.FC<AdminProps> = ({ onBack }) => {
+export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
   const { userProfile } = useAuth();
 
   // Secret Code Clearance State (Persistent in session or user role admin)
@@ -73,8 +74,18 @@ export const Admin: React.FC<AdminProps> = ({ onBack }) => {
   const [dailyPdfs, setDailyPdfs] = useState<DailyPdf[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Tab management
-  const [activeTab, setActiveTab] = useState<'articles' | 'create' | 'reports' | 'queries' | 'logs' | 'daily-pdf'>('articles');
+  // Tab management (Default to daily-pdf if specified in props or URL)
+  const [activeTab, setActiveTab] = useState<'articles' | 'create' | 'reports' | 'queries' | 'logs' | 'daily-pdf'>(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get('tab');
+      if (tabParam === 'daily-pdf' || tabParam === 'pdf') return 'daily-pdf';
+      if (tabParam === 'articles') return 'articles';
+      if (tabParam === 'create') return 'create';
+      if (tabParam === 'queries') return 'queries';
+    } catch {}
+    return initialTab || 'daily-pdf';
+  });
 
   // New Article Form state driven by AI
   const [rawContent, setRawContent] = useState('');

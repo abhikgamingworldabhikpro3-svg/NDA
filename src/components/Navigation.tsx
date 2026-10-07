@@ -110,23 +110,38 @@ export const Sidebar: React.FC<NavigationProps> = ({
           );
         })}
 
-        {/* Admin Section */}
-        {isAdmin && (
-          <div className="pt-4 border-t border-slate-800 mt-4">
-            <p className="px-3 text-[10px] font-bold text-slate-500 tracking-wider uppercase mb-2">Admin Tools</p>
-            <button
-              onClick={() => handleNavigate('/admin')}
-              className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
-                currentPath.startsWith('/admin')
-                  ? 'bg-amber-600 text-white shadow-md'
-                  : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
-              }`}
-            >
-              <Lock className="h-4 w-4 shrink-0" />
-              <span>{t('adminPanel')}</span>
-            </button>
+        {/* Admin Section (Always Accessible with Clearance Gateway) */}
+        <div className="pt-4 border-t border-slate-800 mt-4 space-y-1">
+          <div className="flex items-center justify-between px-3 mb-1">
+            <p className="text-[10px] font-black text-amber-400/90 tracking-wider uppercase">Admin Gateway</p>
+            <span className="text-[9px] font-mono font-bold bg-amber-950 text-amber-400 border border-amber-600/30 px-1.5 py-0.2 rounded">PIN PROTECTED</span>
           </div>
-        )}
+          
+          <button
+            onClick={() => handleNavigate('/admin?tab=daily-pdf')}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+              currentPath.includes('tab=daily-pdf')
+                ? 'bg-blue-600 text-white shadow-md'
+                : 'text-blue-300 hover:bg-blue-950/40 hover:text-white border border-blue-500/20'
+            }`}
+          >
+            <FileText className="h-4 w-4 shrink-0 text-blue-400" />
+            <span className="truncate">Upload Daily HT PDF</span>
+            <span className="ml-auto text-[9px] font-bold bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">NEW</span>
+          </button>
+
+          <button
+            onClick={() => handleNavigate('/admin')}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-xs font-semibold transition-all ${
+              currentPath === '/admin'
+                ? 'bg-amber-600 text-white shadow-md'
+                : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'
+            }`}
+          >
+            <Lock className="h-4 w-4 shrink-0 text-amber-400" />
+            <span>Admin Command HQ</span>
+          </button>
+        </div>
       </nav>
 
       {/* Bottom Profile and Controls */}
@@ -177,6 +192,7 @@ export const MobileBottomNav: React.FC<NavigationProps> = ({
   const mobileItems = [
     { name: t('dashboard'), path: '/dashboard', icon: Compass },
     { name: t('currentAffairs'), path: '/current-affairs', icon: BookOpen },
+    { name: 'HT PDF', path: '/admin?tab=daily-pdf', icon: FileText },
     { name: t('quiz'), path: '/quiz', icon: HelpCircle },
     { name: t('revision'), path: '/revision', icon: RefreshCw },
     { name: t('profile'), path: '/profile', icon: UserIcon },
