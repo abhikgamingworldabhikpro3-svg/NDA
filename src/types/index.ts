@@ -159,7 +159,9 @@ export interface DailyPdf {
   fileName: string;
   fileSize: string;
   date: string;
-  base64Data: string;
+  base64Data?: string;
+  downloadUrl?: string;
+  viewUrl?: string;
   notes?: string;
   createdAt: string;
 }

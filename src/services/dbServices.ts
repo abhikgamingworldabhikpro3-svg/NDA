@@ -31,6 +31,7 @@ import {
   UserQuery,
   DailyPdf
 } from '../types';
+import { indexedDbPdf } from './indexedDbPdf';
 
 // ==========================================
 // 1. AUTH & USER SERVICE
@@ -673,63 +674,139 @@ export const userQueryService = {
 };
 
 // ==========================================
-// 11. DAILY HINDUSTAN TIMES PDF PORTAL SERVICE
+// 11. DAILY HINDUSTAN TIMES PDF PORTAL SERVICE (Zero Firebase Storage - Server Disk & IndexedDB)
 // ==========================================
 export const dailyPdfService = {
   async uploadDailyPdf(pdf: Omit<DailyPdf, 'id' | 'createdAt'>): Promise<DailyPdf> {
-    const pdfId = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-    const newPdf: DailyPdf = {
-      ...pdf,
-      id: pdfId,
-      createdAt: new Date().toISOString()
-    };
+    let savedPdf: DailyPdf;
 
+    // 1. Send to server disk persistent storage (stored in server filesystem, NOT Firebase Storage)
     try {
-      await setDoc(doc(db, 'dailyPdfs', pdfId), newPdf);
-    } catch (err) {
-      console.warn("Firestore PDF sync note, saving to local storage:", err);
+      const res = await fetch('/api/pdf/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pdf)
+      });
+      if (res.ok) {
+        savedPdf = await res.json();
+      } else {
+        throw new Error('Server upload responded with non-200');
+      }
+    } catch (serverErr) {
+      console.warn("Server upload note, fallback to client persistence:", serverErr);
+      const pdfId = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      savedPdf = {
+        ...pdf,
+        id: pdfId,
+        downloadUrl: `/api/pdf/download/${pdfId}`,
+        viewUrl: `/api/pdf/view/${pdfId}`,
+        createdAt: new Date().toISOString()
+      };
     }
 
-    // Save to local storage for instant offline backup
+    // 2. Persist in browser IndexedDB (Unlimited capacity, survives refreshes & offline)
     try {
-      const local = JSON.parse(localStorage.getItem('nda_daily_pdfs') || '[]');
-      local.unshift(newPdf);
-      localStorage.setItem('nda_daily_pdfs', JSON.stringify(local.slice(0, 30)));
-    } catch (e) {}
+      await indexedDbPdf.savePdf({
+        ...savedPdf,
+        base64Data: pdf.base64Data
+      });
+    } catch (idbErr) {
+      console.warn("IndexedDB save note:", idbErr);
+    }
 
-    return newPdf;
+    // 3. Store lightweight metadata in Firestore (WITHOUT heavy base64Data to avoid 1MB document limit)
+    try {
+      const metaOnly = {
+        id: savedPdf.id,
+        title: savedPdf.title,
+        fileName: savedPdf.fileName,
+        fileSize: savedPdf.fileSize,
+        date: savedPdf.date,
+        downloadUrl: savedPdf.downloadUrl || `/api/pdf/download/${savedPdf.id}`,
+        viewUrl: savedPdf.viewUrl || `/api/pdf/view/${savedPdf.id}`,
+        notes: savedPdf.notes || '',
+        createdAt: savedPdf.createdAt
+      };
+      await setDoc(doc(db, 'dailyPdfs', savedPdf.id), metaOnly);
+    } catch (fsErr) {
+      console.warn("Firestore PDF metadata note:", fsErr);
+    }
+
+    return savedPdf;
   },
 
   async getDailyPdfs(): Promise<DailyPdf[]> {
+    const map = new Map<string, DailyPdf>();
+
+    // 1. Fetch from Server Disk API (Persistent across clients and restarts)
+    try {
+      const res = await fetch('/api/pdf/list');
+      if (res.ok) {
+        const serverList: DailyPdf[] = await res.json();
+        for (const item of serverList) {
+          map.set(item.id, item);
+        }
+      }
+    } catch (e) {
+      console.warn("Server PDF list note:", e);
+    }
+
+    // 2. Fetch from IndexedDB (client persistence across reloads & offline)
+    try {
+      const idbList = await indexedDbPdf.getAllPdfs();
+      for (const item of idbList) {
+        if (!map.has(item.id)) {
+          map.set(item.id, item);
+        } else {
+          const existing = map.get(item.id)!;
+          if (!existing.base64Data && item.base64Data) {
+            map.set(item.id, { ...existing, base64Data: item.base64Data });
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("IDB list note:", e);
+    }
+
+    // 3. Fetch from Firestore metadata collection
     try {
       const snapshot = await getDocs(collection(db, 'dailyPdfs'));
-      let list = snapshot.docs.map((doc: any) => doc.data() as DailyPdf);
-      
-      // If Firestore empty, seed default Hindustan Times preview PDF
-      if (list.length === 0) {
-        list = this.getDefaultPdfs();
+      for (const d of snapshot.docs) {
+        const meta = d.data() as DailyPdf;
+        if (!map.has(meta.id)) {
+          map.set(meta.id, meta);
+        }
       }
-
-      return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    } catch (err) {
-      try {
-        const local = JSON.parse(localStorage.getItem('nda_daily_pdfs') || '[]');
-        if (local.length > 0) return local;
-      } catch (e) {}
-      return this.getDefaultPdfs();
+    } catch (e) {
+      console.warn("Firestore PDF metadata note:", e);
     }
+
+    // If still empty, add default sample Hindustan Times PDF
+    if (map.size === 0) {
+      const defaults = this.getDefaultPdfs();
+      for (const def of defaults) {
+        map.set(def.id, def);
+      }
+    }
+
+    const result = Array.from(map.values());
+    return result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   },
 
   async deleteDailyPdf(id: string): Promise<void> {
+    // Delete from server disk
+    try {
+      await fetch(`/api/pdf/${id}`, { method: 'DELETE' });
+    } catch (e) {}
+
+    // Delete from browser IndexedDB
+    try {
+      await indexedDbPdf.deletePdf(id);
+    } catch (e) {}
+
+    // Delete from Firestore metadata
     try {
       await deleteDoc(doc(db, 'dailyPdfs', id));
-    } catch (err) {
-      console.warn("Firestore delete daily PDF failed:", err);
-    }
-    try {
-      const local: DailyPdf[] = JSON.parse(localStorage.getItem('nda_daily_pdfs') || '[]');
-      const filtered = local.filter(p => p.id !== id);
-      localStorage.setItem('nda_daily_pdfs', JSON.stringify(filtered));
     } catch (e) {}
   },
 
@@ -741,6 +818,8 @@ export const dailyPdfService = {
         fileName: "hindustan_times_gat_spec_20261007.pdf",
         fileSize: "1.42 MB",
         date: "2026-10-07",
+        downloadUrl: "/api/pdf/download/pdf_sample_ht_1",
+        viewUrl: "/api/pdf/view/pdf_sample_ht_1",
         base64Data: "JVBERi0xLjQKJSDi48clbXkgZGVtbyBQREYgYmFzZTY0IGRhdGEgZm9yIEhpbmR1c3RhbiBUaW1lcyBHYXQgU3BlY2lhbC4gVGhpcyBpcyBhIHNlY3VyZSBpbi1tZW1vcnkgcGFyc2VkIGZpbGUgdGhhdCBkb2VzIG5vdCB1c2UgRmlyZWJhc2UgU3RvcmFnZS4=",
         notes: "Today's highlights: Francis Halzen wins 2026 Nobel Prize in Physics for IceCube; Rajnath Singh launches INS Surya FSS-1; Cabinet clears ₹10,000-Crore SME Growth Fund.",
         createdAt: "2026-10-07T05:30:00Z"

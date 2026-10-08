@@ -22,10 +22,12 @@ import {
   ThumbsUp,
   Brain,
   FileDown,
-  FileText
+  FileText,
+  Eye
 } from 'lucide-react';
 import { translations, LanguageCode } from '../i18n/translations';
 import { getRecommendedArticles } from '../data/seedData';
+import { indexedDbPdf } from '../services/indexedDbPdf';
 
 interface DashboardProps {
   setPath: (path: string) => void;
@@ -42,6 +44,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
   const [attempts, setAttempts] = useState<QuizAttempt[]>([]);
   const [dailyPdfs, setDailyPdfs] = useState<DailyPdf[]>([]);
   const [loading, setLoading] = useState(true);
+  const [previewingPdf, setPreviewingPdf] = useState<DailyPdf | null>(null);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -91,15 +94,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
     loadDashboardData();
   }, [userProfile]);
 
-  const handleDownloadPdf = (pdf: DailyPdf) => {
+  const handleDownloadPdf = async (pdf: DailyPdf) => {
     try {
-      const linkSource = pdf.base64Data;
-      const downloadLink = document.createElement("a");
-      downloadLink.href = linkSource.startsWith('data:') ? linkSource : `data:application/pdf;base64,${linkSource}`;
-      downloadLink.download = pdf.fileName;
-      downloadLink.click();
+      if (pdf.downloadUrl) {
+        window.location.href = pdf.downloadUrl;
+        return;
+      }
+      let base64 = pdf.base64Data;
+      if (!base64) {
+        const idb = await indexedDbPdf.getPdfById(pdf.id);
+        if (idb?.base64Data) base64 = idb.base64Data;
+      }
+      if (base64) {
+        const downloadLink = document.createElement("a");
+        downloadLink.href = base64.startsWith('data:') ? base64 : `data:application/pdf;base64,${base64}`;
+        downloadLink.download = pdf.fileName;
+        downloadLink.click();
+        return;
+      }
+      const res = await fetch(`/api/pdf/${pdf.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.base64Data) {
+          const downloadLink = document.createElement("a");
+          downloadLink.href = data.base64Data;
+          downloadLink.download = pdf.fileName;
+          downloadLink.click();
+        }
+      }
     } catch (e) {
-      alert("Failed to download PDF.");
+      console.error("Failed to download PDF:", e);
     }
   };
 
@@ -404,13 +428,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
                   )}
                 </div>
 
-                <button
-                  onClick={() => handleDownloadPdf(pdf)}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-500 text-black font-extrabold text-[10px] uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <FileDown className="h-3.5 w-3.5" />
-                  <span>Download HT Daily PDF</span>
-                </button>
+                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                  <button
+                    onClick={() => setPreviewingPdf(pdf)}
+                    className="flex-1 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-300 font-extrabold text-[11px] uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer border border-blue-200 dark:border-blue-800/40 shadow-xs"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    <span>Read Online</span>
+                  </button>
+                  <button
+                    onClick={() => handleDownloadPdf(pdf)}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-[11px] uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <FileDown className="h-3.5 w-3.5" />
+                    <span>Download</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -504,6 +537,68 @@ export const Dashboard: React.FC<DashboardProps> = ({ setPath, lang }) => {
           </div>
         )}
       </section>
+
+      {/* In-App PDF Reader Modal */}
+      {previewingPdf && (
+        <div className="fixed inset-0 z-50 bg-black/85 flex flex-col p-3 sm:p-6 backdrop-blur-md">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex-1 flex flex-col overflow-hidden shadow-2xl max-w-5xl mx-auto w-full">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                <div>
+                  <h4 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wide">
+                    {previewingPdf.title}
+                  </h4>
+                  <p className="text-[10px] text-slate-500 font-mono">
+                    {previewingPdf.fileName} ({previewingPdf.fileSize})
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleDownloadPdf(previewingPdf)}
+                  className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer"
+                >
+                  <FileDown className="h-3.5 w-3.5" />
+                  <span>Download</span>
+                </button>
+                <button
+                  onClick={() => setPreviewingPdf(null)}
+                  className="p-1.5 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-200 dark:bg-slate-800 rounded-lg text-xs cursor-pointer"
+                >
+                  ✕ Close
+                </button>
+              </div>
+            </div>
+
+            <div className="flex-1 bg-slate-100 dark:bg-slate-950 flex items-center justify-center p-2 sm:p-4 overflow-hidden">
+              {previewingPdf.viewUrl || previewingPdf.base64Data ? (
+                <iframe
+                  src={
+                    previewingPdf.viewUrl ||
+                    (previewingPdf.base64Data?.startsWith('data:')
+                      ? previewingPdf.base64Data
+                      : `data:application/pdf;base64,${previewingPdf.base64Data}`)
+                  }
+                  title={previewingPdf.title}
+                  className="w-full h-full rounded-xl border border-slate-300 dark:border-slate-800 bg-white"
+                />
+              ) : (
+                <div className="text-center space-y-3 p-8">
+                  <FileText className="h-12 w-12 text-slate-400 mx-auto" />
+                  <p className="text-xs text-slate-500">PDF document stream ready for reading.</p>
+                  <button
+                    onClick={() => handleDownloadPdf(previewingPdf)}
+                    className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl"
+                  >
+                    Download PDF Document
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -34,6 +34,22 @@ const ALLOWED_CATEGORIES = [
 function getComprehensiveGATKnowledge(query: string): string {
   const q = query.toLowerCase();
 
+  // 0. Identity & Greeting Queries
+  if (q.includes("who are you") || q.includes("who r u") || q.includes("who created you") || q.includes("who made you") || q.includes("what is your name") || q.includes("introduce yourself") || q.includes("what are you") || q.includes("what is nda ai") || q === "hi" || q === "hello" || q === "jai hind") {
+    return `### 🎖️ Jai Hind, Cadet! I am **NDA AI** — Your Personal UPSC NDA GAT & Defence Studies Mentor
+
+I am an elite, AI-driven study companion engineered specifically for National Defence Academy (NDA) & Naval Academy (NA) aspirants.
+
+#### 🎯 What I Do:
+1. **Defence & National Current Affairs**: Daily coverage of Indian Armed Forces acquisitions, missile testing (BrahMos, Agni, Astra), warship commissioning, and bilateral military exercises.
+2. **UPSC NDA GAT Syllabus Mastery**: Direct links to Modern Indian History, Indian Polity, Physical Geography, and General Science.
+3. **Smart Practice Quizzes & MCQs**: Generate UPSC-standard 4-option practice questions with in-depth explanations and common trap analysis.
+4. **Hindustan Times Daily Current Affairs**: Access and revise daily current affairs PDF digests.
+5. **Interactive Doubt Solving**: Ask me any question on articles, military ranks, theater commands, international straits, or exam strategy!
+
+**How can I assist your mission to Khadakwasla today? Ask me any question or test your knowledge!**`;
+  }
+
   // 1. Quizzes / MCQs Request
   if (q.includes("mcq") || q.includes("quiz") || q.includes("practice question") || q.includes("test me")) {
     return `### 🎯 UPSC NDA GAT Target Practice Questions
@@ -186,12 +202,202 @@ Feel free to ask for any specific topic breakdown, military treaty analysis, or 
 
 async function startServer() {
   const app = express();
-  app.use(express.json());
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+  // Persistent disk storage directory for uploaded Daily PDFs
+  const UPLOAD_DIR = path.join(__dirname, 'uploads', 'daily-pdfs');
+  const MANIFEST_FILE = path.join(UPLOAD_DIR, 'manifest.json');
+  try {
+    if (!fs.existsSync(UPLOAD_DIR)) {
+      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+    }
+    if (!fs.existsSync(MANIFEST_FILE)) {
+      fs.writeFileSync(MANIFEST_FILE, JSON.stringify([]));
+    }
+  } catch (dirErr) {
+    console.warn("Storage folder init:", dirErr);
+  }
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
+
+  // Persistent PDF Upload Endpoint (Saves to server disk - NOT Firebase Storage!)
+  app.post('/api/pdf/upload', async (req, res) => {
+    try {
+      const { title, fileName, fileSize, date, notes, base64Data } = req.body;
+      if (!fileName || !base64Data) {
+        return res.status(400).json({ error: "Missing required PDF file content" });
+      }
+
+      const id = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const safeFileName = `${id}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const filePath = path.join(UPLOAD_DIR, safeFileName);
+
+      // Extract raw base64 data and write binary file to disk
+      const cleanBase64 = base64Data.replace(/^data:application\/pdf;base64,/, '');
+      const buffer = Buffer.from(cleanBase64, 'base64');
+      fs.writeFileSync(filePath, buffer);
+
+      const newPdfItem = {
+        id,
+        title: title || 'Hindustan Times GAT Daily Special',
+        fileName,
+        safeFileName,
+        fileSize: fileSize || ((buffer.length / (1024 * 1024)).toFixed(2) + ' MB'),
+        date: date || new Date().toISOString().split('T')[0],
+        notes: notes || '',
+        downloadUrl: `/api/pdf/download/${id}`,
+        viewUrl: `/api/pdf/view/${id}`,
+        createdAt: new Date().toISOString()
+      };
+
+      // Update disk manifest
+      let currentList = [];
+      try {
+        if (fs.existsSync(MANIFEST_FILE)) {
+          currentList = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
+        }
+      } catch (readErr) {
+        currentList = [];
+      }
+      currentList.unshift(newPdfItem);
+      fs.writeFileSync(MANIFEST_FILE, JSON.stringify(currentList, null, 2));
+
+      console.log(`[DailyPDF] Successfully saved PDF "${fileName}" (${newPdfItem.fileSize}) to persistent disk.`);
+      // Return with base64 data so the client has immediate access
+      res.json({ ...newPdfItem, base64Data });
+    } catch (err: any) {
+      console.error("PDF Upload Error:", err);
+      res.status(500).json({ error: err.message || "Failed to persist PDF file" });
+    }
+  });
+
+  // List all uploaded PDFs from disk
+  app.get('/api/pdf/list', (req, res) => {
+    try {
+      if (fs.existsSync(MANIFEST_FILE)) {
+        const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
+        return res.json(list);
+      }
+      res.json([]);
+    } catch (err: any) {
+      console.error("PDF list error:", err);
+      res.json([]);
+    }
+  });
+
+  // Download PDF file as attachment
+  app.get('/api/pdf/download/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!fs.existsSync(MANIFEST_FILE)) {
+        return res.status(404).send("File not found");
+      }
+      const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
+      const item = list.find((p: any) => p.id === id);
+      if (!item) {
+        return res.status(404).send("PDF record not found");
+      }
+      const filePath = path.join(UPLOAD_DIR, item.safeFileName);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).send("PDF binary not found on disk");
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${item.fileName}"`);
+      fs.createReadStream(filePath).pipe(res);
+    } catch (err: any) {
+      console.error("PDF download error:", err);
+      res.status(500).send("Error streaming PDF");
+    }
+  });
+
+  // View PDF inline in browser tab / iframe
+  app.get('/api/pdf/view/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!fs.existsSync(MANIFEST_FILE)) {
+        return res.status(404).send("File not found");
+      }
+      const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
+      const item = list.find((p: any) => p.id === id);
+      if (!item) {
+        return res.status(404).send("PDF record not found");
+      }
+      const filePath = path.join(UPLOAD_DIR, item.safeFileName);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).send("PDF binary not found on disk");
+      }
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `inline; filename="${item.fileName}"`);
+      fs.createReadStream(filePath).pipe(res);
+    } catch (err: any) {
+      console.error("PDF view error:", err);
+      res.status(500).send("Error streaming PDF");
+    }
+  });
+
+  // Retrieve base64 data for a specific PDF
+  app.get('/api/pdf/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!fs.existsSync(MANIFEST_FILE)) {
+        return res.status(404).json({ error: "File not found" });
+      }
+      const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
+      const item = list.find((p: any) => p.id === id);
+      if (!item) {
+        return res.status(404).json({ error: "PDF record not found" });
+      }
+      const filePath = path.join(UPLOAD_DIR, item.safeFileName);
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "PDF binary not found on disk" });
+      }
+
+      const fileBuffer = fs.readFileSync(filePath);
+      const base64Data = `data:application/pdf;base64,${fileBuffer.toString('base64')}`;
+      res.json({ ...item, base64Data });
+    } catch (err: any) {
+      console.error("PDF retrieval error:", err);
+      res.status(500).json({ error: "Error retrieving PDF" });
+    }
+  });
+
+  // Delete uploaded PDF from disk
+  app.delete('/api/pdf/:id', (req, res) => {
+    try {
+      const { id } = req.params;
+      if (!fs.existsSync(MANIFEST_FILE)) {
+        return res.json({ success: true });
+      }
+      let list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
+      const item = list.find((p: any) => p.id === id);
+      if (item) {
+        const filePath = path.join(UPLOAD_DIR, item.safeFileName);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        list = list.filter((p: any) => p.id !== id);
+        fs.writeFileSync(MANIFEST_FILE, JSON.stringify(list, null, 2));
+      }
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error("PDF deletion error:", err);
+      res.status(500).json({ error: "Failed to delete PDF" });
+    }
+  });
+
+  // Helper for fast, non-blocking AI calls with strict timeout
+  const generateWithTimeout = async (model: string, payload: any, timeoutMs = 4000) => {
+    return Promise.race([
+      ai.models.generateContent({ model, ...payload }),
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`Model ${model} timeout after ${timeoutMs}ms`)), timeoutMs))
+    ]);
+  };
 
   // Resilient Assistant API Endpoint (GAT Coach)
   app.post('/api/gemini/assistant', async (req, res) => {
@@ -202,6 +408,12 @@ async function startServer() {
     }
 
     const trimmedQuery = query.trim();
+    const lowerQuery = trimmedQuery.toLowerCase();
+
+    // Direct, instant response for identity and greeting queries
+    if (lowerQuery.includes("who are you") || lowerQuery.includes("who r u") || lowerQuery.includes("who created you") || lowerQuery.includes("who made you") || lowerQuery.includes("what is your name") || lowerQuery.includes("introduce yourself") || lowerQuery === "hi" || lowerQuery === "hello" || lowerQuery === "jai hind") {
+      return res.json({ text: getComprehensiveGATKnowledge(trimmedQuery) });
+    }
 
     const systemInstruction = `You are "NDA AI" (GAT Coach), an elite UPSC NDA/NA General Knowledge and Defence Studies Mentor.
 Your role is to guide aspirants with high-precision, exam-oriented knowledge in Defence Technology, Geopolitics, National Schemes, Modern History, Geography, and General Science.
@@ -232,48 +444,46 @@ Always format your response with clean, professional Markdown:
       }
     ];
 
-    // Multi-tier execution: Try gemini-3.8-flash -> fallback to gemini-3.1-flash-lite -> fallback to GAT Knowledge Base
-    try {
-      if (apiKey) {
+    // Multi-tier execution: Try gemini-3.1-flash-lite (fast) -> fallback to gemini-3.8-flash -> fallback to GAT Knowledge Base
+    if (apiKey) {
+      try {
         try {
-          const response = await ai.models.generateContent({
-            model: "gemini-3.8-flash",
-            contents: contents,
+          const liteResponse: any = await generateWithTimeout("gemini-3.1-flash-lite", {
+            contents,
             config: {
-              systemInstruction: systemInstruction,
+              systemInstruction,
               temperature: 0.7,
             }
-          });
+          }, 3500);
 
-          if (response?.text && response.text.trim()) {
-            return res.json({ text: response.text.trim() });
+          if (liteResponse?.text && liteResponse.text.trim()) {
+            return res.json({ text: liteResponse.text.trim() });
           }
-        } catch (primaryErr: any) {
-          console.warn("Primary model note, switching to fast lite model:", primaryErr?.message || primaryErr);
+        } catch (liteErr: any) {
+          console.warn("Lite model note, trying 3.8-flash:", liteErr?.message || liteErr);
           
           try {
-            const liteResponse = await ai.models.generateContent({
-              model: "gemini-3.1-flash-lite",
-              contents: contents,
+            const primaryResponse: any = await generateWithTimeout("gemini-3.8-flash", {
+              contents,
               config: {
-                systemInstruction: systemInstruction,
+                systemInstruction,
                 temperature: 0.7,
               }
-            });
+            }, 3500);
 
-            if (liteResponse?.text && liteResponse.text.trim()) {
-              return res.json({ text: liteResponse.text.trim() });
+            if (primaryResponse?.text && primaryResponse.text.trim()) {
+              return res.json({ text: primaryResponse.text.trim() });
             }
-          } catch (liteErr) {
-            console.warn("Lite model note, serving GAT knowledge capsule:", liteErr);
+          } catch (primErr: any) {
+            console.warn("Primary model note:", primErr?.message || primErr);
           }
         }
+      } catch (globalAiErr) {
+        console.warn("AI generation global note:", globalAiErr);
       }
-    } catch (globalAiErr) {
-      console.warn("AI generation note:", globalAiErr);
     }
 
-    // Always provide immediate, rich, high-yield coaching response
+    // Always provide immediate, rich, high-yield coaching response (never error or 503)
     const fallbackResponse = getComprehensiveGATKnowledge(trimmedQuery);
     return res.json({ text: fallbackResponse });
   });
@@ -573,6 +783,24 @@ Respond strictly in JSON format matching the schema.`;
       const { query, articleTitle = "Defense Affairs", articleContent = "", category = "Defence" } = req.body || {};
       
       const studentQuery = query && typeof query === 'string' ? query.trim() : "Explain key takeaways";
+      const lowerQuery = studentQuery.toLowerCase();
+
+      // Check if user is asking who the AI is
+      if (lowerQuery.includes("who are you") || lowerQuery.includes("who r u") || lowerQuery.includes("who created you") || lowerQuery.includes("what is your name") || lowerQuery.includes("introduce yourself") || lowerQuery === "hi" || lowerQuery === "hello" || lowerQuery === "jai hind") {
+        return res.json({
+          text: `### 🎖️ Jai Hind, Cadet! I am **NDA AI** — Your UPSC NDA GAT & Defence Studies Mentor.
+
+I am guiding you right now on the article **"${articleTitle}"** (${category}).
+
+You can ask me:
+- **Key Takeaways & Military Specs**: ranges, platforms, participating units, and indigenization categories (like Make in India / IDDM).
+- **NDA Exam Angles & Traps**: statement-based questions, matching items, and common pitfalls in the GAT paper.
+- **Static GK Connections**: relevant constitutional articles, founding years, treaties, river systems, or DRDO/ISRO history.
+
+How can I assist your revision for this topic today?`
+        });
+      }
+
       const contentContext = articleContent || articleTitle;
 
       const prompt = `You are "NDA AI", an elite military instructor coaching an NDA aspirant on a specific current affair article.
@@ -591,26 +819,24 @@ Answer the student's question clearly and authoritatively with:
 
       if (apiKey) {
         try {
-          const response = await ai.models.generateContent({
-            model: "gemini-3.8-flash",
+          const liteResponse: any = await generateWithTimeout("gemini-3.1-flash-lite", {
             contents: prompt,
-          });
+          }, 3500);
 
-          if (response?.text && response.text.trim()) {
-            return res.json({ text: response.text.trim() });
+          if (liteResponse?.text && liteResponse.text.trim()) {
+            return res.json({ text: liteResponse.text.trim() });
           }
-        } catch (e) {
-          console.warn("Primary article chat fallback, attempting fast lite model:", e);
+        } catch (e: any) {
+          console.warn("Lite article chat fallback, attempting 3.8-flash:", e?.message || e);
           try {
-            const liteResponse = await ai.models.generateContent({
-              model: "gemini-3.1-flash-lite",
+            const primaryResponse: any = await generateWithTimeout("gemini-3.8-flash", {
               contents: prompt,
-            });
-            if (liteResponse?.text && liteResponse.text.trim()) {
-              return res.json({ text: liteResponse.text.trim() });
+            }, 3500);
+            if (primaryResponse?.text && primaryResponse.text.trim()) {
+              return res.json({ text: primaryResponse.text.trim() });
             }
-          } catch (liteE) {
-            console.warn("Lite article chat model note:", liteE);
+          } catch (liteE: any) {
+            console.warn("Primary article chat model note:", liteE?.message || liteE);
           }
         }
       }

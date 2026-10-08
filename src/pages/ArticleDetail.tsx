@@ -190,7 +190,13 @@ export const ArticleDetail: React.FC<ArticleDetailProps> = ({
       setChatMessages(prev => [...prev, { role: 'model', text: responseText }]);
     } catch (err) {
       console.warn("Client fallback for article chat:", err);
-      const fallbackResponse = `### 🎯 GAT Brief: ${article.title}\n\n**Direct Answer:**\nRegarding "${userText}": In this article (${article.category}), key focus is on: ${(article.importantFacts || []).slice(0, 3).join("; ")}.\n\n**NDA Exam Context:**\n${article.ndaRelevance || "High probability topic for upcoming GAT paper."}\n\n**Static GK:**\n${article.staticGK || "Review foundational dates, acts, and military headquarters."}`;
+      const lowerText = userText.toLowerCase();
+      let fallbackResponse = '';
+      if (lowerText.includes("who are you") || lowerText.includes("who r u") || lowerText.includes("who created you") || lowerText.includes("what is your name") || lowerText.includes("introduce")) {
+        fallbackResponse = `### 🎖️ Jai Hind, Cadet! I am **NDA AI** — Your UPSC NDA GAT & Defence Studies Mentor.\n\nI am guiding you right now on the article **"${article.title}"** (${article.category}).\n\nAsk me about key specifications, indigenization status, likely exam traps, or static GK connections!`;
+      } else {
+        fallbackResponse = `### 🎯 GAT Brief: ${article.title}\n\n**Direct Answer:**\nRegarding "${userText}": In this article (${article.category}), key focus is on: ${(article.importantFacts || []).slice(0, 3).join("; ")}.\n\n**NDA Exam Context:**\n${article.ndaRelevance || "High probability topic for upcoming GAT paper."}\n\n**Static GK:**\n${article.staticGK || "Review foundational dates, acts, and military headquarters."}`;
+      }
       setChatMessages(prev => [...prev, { role: 'model', text: fallbackResponse }]);
     } finally {
       setLoadingChat(false);

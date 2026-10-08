@@ -10,6 +10,7 @@ import {
   dailyPdfService
 } from '../services/dbServices';
 import { seedSampleFirestoreData } from '../data/seedData';
+import { indexedDbPdf } from '../services/indexedDbPdf';
 import { CurrentAffair, Question, QuestionReport, AuditLog, UserQuery, DailyPdf } from '../types';
 import { 
   Lock, 
@@ -40,7 +41,11 @@ import {
   LogOut,
   Eye,
   EyeOff,
-  Check
+  Check,
+  FileDown,
+  ExternalLink,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 interface AdminProps {
@@ -99,6 +104,9 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
   const [pdfNotes, setPdfNotes] = useState('');
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [previewingPdf, setPreviewingPdf] = useState<DailyPdf | null>(null);
+  const [deletingPdfId, setDeletingPdfId] = useState<string | null>(null);
 
   // Edited Article result state (Ready for edits and publication)
   const [aiResult, setAiResult] = useState<Partial<CurrentAffair> | null>(null);
@@ -170,51 +178,95 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
   const handlePdfUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pdfFile) {
-      alert("Please select a valid Hindustan Times PDF file first.");
+      setPdfStatus({ type: 'error', message: "Please select a valid Hindustan Times PDF file first." });
       return;
     }
     setIsUploadingPdf(true);
+    setPdfStatus(null);
     try {
       const reader = new FileReader();
       reader.onload = async () => {
         try {
           const base64 = reader.result as string;
           const newPdf = await dailyPdfService.uploadDailyPdf({
-            title: pdfTitle || 'Hindustan Times GAT Daily Special',
+            title: pdfTitle.trim() || 'Hindustan Times GAT Daily Special',
             fileName: pdfFile.name,
             fileSize: (pdfFile.size / (1024 * 1024)).toFixed(2) + ' MB',
             date: pdfDate,
             base64Data: base64,
-            notes: pdfNotes
+            notes: pdfNotes.trim()
           });
-          setDailyPdfs(prev => [newPdf, ...prev]);
-          alert("Success! Hindustan Times PDF uploaded successfully to custom portal storage.");
+          setDailyPdfs(prev => [newPdf, ...prev.filter(p => p.id !== newPdf.id)]);
+          setPdfStatus({ 
+            type: 'success', 
+            message: `"${newPdf.title}" uploaded & saved permanently! Persisted to Server Disk & Storage — file will remain saved after refresh.` 
+          });
           setPdfTitle('');
           setPdfFile(null);
           setPdfNotes('');
-        } catch (uploadErr) {
+          const fileInput = document.getElementById('ht-pdf-file-input') as HTMLInputElement;
+          if (fileInput) fileInput.value = '';
+        } catch (uploadErr: any) {
           console.error(uploadErr);
-          alert("Failed during PDF saving.");
+          setPdfStatus({ type: 'error', message: uploadErr.message || "Failed during PDF saving." });
         } finally {
           setIsUploadingPdf(false);
         }
       };
+      reader.onerror = () => {
+        setPdfStatus({ type: 'error', message: "Failed to read file from disk." });
+        setIsUploadingPdf(false);
+      };
       reader.readAsDataURL(pdfFile);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Failed to parse file.");
+      setPdfStatus({ type: 'error', message: err.message || "Failed to process PDF file." });
       setIsUploadingPdf(false);
     }
   };
 
   const handleDeletePdf = async (id: string) => {
-    if (confirm("Are you sure you want to delete this Daily PDF?")) {
-      try {
-        await dailyPdfService.deleteDailyPdf(id);
-        setDailyPdfs(prev => prev.filter(p => p.id !== id));
-      } catch (err) {
-        console.error(err);
+    try {
+      await dailyPdfService.deleteDailyPdf(id);
+      setDailyPdfs(prev => prev.filter(p => p.id !== id));
+      setDeletingPdfId(null);
+      setPdfStatus({ type: 'success', message: "PDF removed from persistent storage." });
+    } catch (err) {
+      console.error(err);
+      setPdfStatus({ type: 'error', message: "Failed to delete PDF." });
+    }
+  };
+
+  const handleDownloadPdf = async (pdf: DailyPdf) => {
+    try {
+      if (pdf.downloadUrl) {
+        window.location.href = pdf.downloadUrl;
+        return;
       }
+      let base64 = pdf.base64Data;
+      if (!base64) {
+        const idb = await indexedDbPdf.getPdfById(pdf.id);
+        if (idb?.base64Data) base64 = idb.base64Data;
+      }
+      if (base64) {
+        const a = document.createElement('a');
+        a.href = base64.startsWith('data:') ? base64 : `data:application/pdf;base64,${base64}`;
+        a.download = pdf.fileName;
+        a.click();
+        return;
+      }
+      const res = await fetch(`/api/pdf/${pdf.id}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.base64Data) {
+          const a = document.createElement('a');
+          a.href = data.base64Data;
+          a.download = pdf.fileName;
+          a.click();
+        }
+      }
+    } catch (e) {
+      console.error("Failed to download PDF:", e);
     }
   };
 
@@ -784,12 +836,53 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
       {/* Hindustan Times Daily PDF Tab */}
       {activeTab === 'daily-pdf' && (
         <section className="space-y-6">
-          <div className="bg-[#111c13] border border-[#233827] rounded-2xl p-5 sm:p-6 space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#233827] pb-3">
-              <FileText className="h-5 w-5 text-blue-400" />
-              <div>
-                <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">Hindustan Times PDF Upload Console</h3>
-                <p className="text-[11px] text-slate-400">Upload daily current affairs PDFs. These files are stored as secure database Base64 payloads and **will not** be saved in Firebase Storage.</p>
+          {/* Status Message Banner */}
+          {pdfStatus && (
+            <div className={`p-4 rounded-xl border flex items-center justify-between text-xs font-bold transition-all ${
+              pdfStatus.type === 'success' 
+                ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-300' 
+                : 'bg-rose-950/40 border-rose-500/40 text-rose-300'
+            }`}>
+              <div className="flex items-center gap-2.5">
+                {pdfStatus.type === 'success' ? (
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                ) : (
+                  <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
+                )}
+                <span>{pdfStatus.message}</span>
+              </div>
+              <button 
+                onClick={() => setPdfStatus(null)}
+                className="text-slate-400 hover:text-white text-xs px-2 py-0.5"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          <div className="bg-[#111c13] border border-[#233827] rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#233827] pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-blue-950/60 rounded-xl border border-blue-500/30 text-blue-400">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
+                    <span>Hindustan Times Daily Current Affairs PDF Console</span>
+                    <span className="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold border border-emerald-600/30">
+                      PERSISTENT STORAGE
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    Upload daily HT current affairs PDFs. Persisted directly on Server Disk & Browser IndexedDB — <strong className="text-amber-400">Zero Firebase Storage used</strong> & <strong className="text-emerald-400">retains files after refresh</strong>.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-[10px] font-mono font-bold text-slate-300 bg-[#09100a] px-2.5 py-1 rounded-lg border border-[#233827]">
+                  {dailyPdfs.length} PDFs Active
+                </span>
               </div>
             </div>
 
@@ -805,7 +898,7 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
                     value={pdfTitle}
                     onChange={(e) => setPdfTitle(e.target.value)}
                     placeholder="e.g. Hindustan Times - 7 October 2026"
-                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
+                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/40"
                   />
                 </div>
 
@@ -824,82 +917,211 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
 
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Choose Hindustan Times PDF *
+                    Choose Hindustan Times PDF Document *
                   </label>
                   <input 
+                    id="ht-pdf-file-input"
                     type="file"
                     required
-                    accept=".pdf"
+                    accept=".pdf,application/pdf"
                     onChange={(e) => setPdfFile(e.target.files ? e.target.files[0] : null)}
-                    className="w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#1c2e20] file:text-blue-300 hover:file:bg-[#253f2a] cursor-pointer"
+                    className="w-full text-xs text-slate-300 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-600 file:text-black hover:file:bg-blue-500 cursor-pointer bg-[#090f0a] border border-[#2a452f] p-1 rounded-xl"
                   />
+                  {pdfFile && (
+                    <p className="text-[10px] text-blue-400 font-mono mt-1">
+                      Selected: {pdfFile.name} ({(pdfFile.size / (1024 * 1024)).toFixed(2)} MB)
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="space-y-3 flex flex-col justify-between">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Key Highlights & Study Notes
+                    Key Highlights & GAT Study Notes (Optional)
                   </label>
                   <textarea 
                     rows={4}
                     value={pdfNotes}
                     onChange={(e) => setPdfNotes(e.target.value)}
-                    placeholder="Provide quick GAT bullet points or topic summaries contained in this PDF..."
-                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs p-3 rounded-xl outline-none focus:border-blue-400"
+                    placeholder="Provide quick GAT bullet points, military developments, or core topics covered in this PDF..."
+                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs p-3 rounded-xl outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/40"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isUploadingPdf}
-                  className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                  className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-98"
                 >
                   <RefreshCw className={`h-4 w-4 ${isUploadingPdf ? 'animate-spin' : ''}`} />
-                  <span>{isUploadingPdf ? "Encoding & Uploading..." : "Publish HT PDF Live"}</span>
+                  <span>{isUploadingPdf ? "Saving to Persistent Storage..." : "Publish HT PDF Live"}</span>
                 </button>
               </div>
             </form>
           </div>
 
           <div className="space-y-3">
-            <h4 className="text-xs font-extrabold text-slate-400 uppercase tracking-wider">Currently Published Hindustan Times PDFs</h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider">
+                Published Hindustan Times Daily PDFs ({dailyPdfs.length})
+              </h4>
+              <span className="text-[10px] text-slate-500 font-mono">
+                Persisted & Synced across sessions
+              </span>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {dailyPdfs.length === 0 ? (
                 <div className="col-span-2 p-8 text-center text-slate-500 text-xs bg-[#111c13] border border-[#233827] rounded-2xl">
-                  No Daily PDFs published yet.
+                  No Daily PDFs published yet. Upload your first edition above!
                 </div>
               ) : (
                 dailyPdfs.map((pdf) => (
-                  <div key={pdf.id} className="bg-[#111c13] border border-[#233827] p-4 rounded-2xl flex flex-col justify-between gap-3 shadow relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2">
-                      <button
-                        onClick={() => handleDeletePdf(pdf.id)}
-                        className="text-rose-400 hover:text-rose-300 p-1.5 rounded bg-rose-950/20 hover:bg-rose-900/40 border border-rose-500/20 cursor-pointer transition"
-                        title="Delete PDF"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="space-y-1 pr-8">
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-mono text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-500/20 font-bold">{pdf.date}</span>
-                        <span className="text-[10px] text-slate-400 font-mono">{pdf.fileSize}</span>
+                  <div key={pdf.id} className="bg-[#111c13] border border-[#233827] hover:border-blue-500/30 p-4.5 rounded-2xl flex flex-col justify-between gap-3 shadow-md relative overflow-hidden transition">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-mono text-blue-400 bg-blue-950 px-2.5 py-0.5 rounded border border-blue-500/20 font-bold">
+                          📅 {pdf.date}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-mono font-bold">
+                          📦 {pdf.fileSize}
+                        </span>
                       </div>
-                      <h5 className="text-xs font-black text-white uppercase">{pdf.title}</h5>
-                      <p className="text-[11px] text-slate-400 font-mono italic truncate">{pdf.fileName}</p>
+
+                      <h5 className="text-xs font-black text-white uppercase tracking-wide">
+                        {pdf.title}
+                      </h5>
+                      <p className="text-[11px] text-slate-400 font-mono truncate">
+                        📄 {pdf.fileName}
+                      </p>
+
                       {pdf.notes && (
-                        <p className="text-[11px] text-slate-300 bg-[#09100a] p-2 rounded-lg border border-[#1e3322] mt-2 leading-relaxed">
+                        <p className="text-[11px] text-slate-300 bg-[#09100a] p-2.5 rounded-xl border border-[#1e3322] leading-relaxed line-clamp-3">
                           {pdf.notes}
                         </p>
                       )}
+                    </div>
+
+                    <div className="pt-2 border-t border-[#1c2e20] flex items-center gap-2">
+                      <button
+                        onClick={() => setPreviewingPdf(pdf)}
+                        className="flex-1 py-1.5 bg-blue-950/80 hover:bg-blue-900/80 text-blue-300 text-[11px] font-bold rounded-lg border border-blue-500/30 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        title="Read PDF in-app"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                        <span>Read Online</span>
+                      </button>
+
+                      <button
+                        onClick={() => handleDownloadPdf(pdf)}
+                        className="flex-1 py-1.5 bg-emerald-950/80 hover:bg-emerald-900/80 text-emerald-300 text-[11px] font-bold rounded-lg border border-emerald-500/30 flex items-center justify-center gap-1.5 transition cursor-pointer"
+                        title="Download PDF file"
+                      >
+                        <FileDown className="h-3.5 w-3.5" />
+                        <span>Download</span>
+                      </button>
+
+                      <button
+                        onClick={() => setDeletingPdfId(pdf.id)}
+                        className="p-1.5 text-rose-400 hover:text-rose-300 rounded-lg bg-rose-950/30 hover:bg-rose-900/50 border border-rose-500/20 transition cursor-pointer"
+                        title="Delete this PDF"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))
               )}
             </div>
           </div>
+
+          {/* Delete Confirmation Modal */}
+          {deletingPdfId && (
+            <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 backdrop-blur-xs">
+              <div className="bg-[#111c13] border border-rose-500/30 p-5 rounded-2xl max-w-sm w-full space-y-4 shadow-2xl">
+                <div className="flex items-center gap-3 text-rose-400">
+                  <AlertTriangle className="h-5 w-5" />
+                  <h4 className="text-sm font-black uppercase">Confirm Deletion</h4>
+                </div>
+                <p className="text-xs text-slate-300">
+                  Are you sure you want to permanently delete this Daily PDF from persistent storage?
+                </p>
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    onClick={() => setDeletingPdfId(null)}
+                    className="px-3 py-1.5 text-xs text-slate-300 hover:text-white bg-[#1c2e20] rounded-lg"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => handleDeletePdf(deletingPdfId)}
+                    className="px-3.5 py-1.5 text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 rounded-lg"
+                  >
+                    Delete Permanently
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* In-App PDF Reader Modal */}
+          {previewingPdf && (
+            <div className="fixed inset-0 z-50 bg-black/90 flex flex-col p-3 sm:p-6 backdrop-blur-md">
+              <div className="bg-[#111c13] border border-[#233827] rounded-2xl flex-1 flex flex-col overflow-hidden shadow-2xl">
+                <div className="p-4 border-b border-[#233827] flex items-center justify-between bg-[#0a120c]">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-400" />
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase">{previewingPdf.title}</h4>
+                      <p className="text-[10px] text-slate-400 font-mono">{previewingPdf.fileName} ({previewingPdf.fileSize})</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleDownloadPdf(previewingPdf)}
+                      className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-black text-xs font-bold rounded-lg flex items-center gap-1.5"
+                    >
+                      <FileDown className="h-3.5 w-3.5" />
+                      <span>Download</span>
+                    </button>
+                    <button
+                      onClick={() => setPreviewingPdf(null)}
+                      className="p-1.5 text-slate-400 hover:text-white bg-[#1c2e20] rounded-lg text-xs"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex-1 bg-slate-900 flex items-center justify-center p-4 overflow-auto">
+                  {previewingPdf.viewUrl || previewingPdf.base64Data ? (
+                    <iframe
+                      src={
+                        previewingPdf.viewUrl ||
+                        (previewingPdf.base64Data?.startsWith('data:')
+                          ? previewingPdf.base64Data
+                          : `data:application/pdf;base64,${previewingPdf.base64Data}`)
+                      }
+                      title={previewingPdf.title}
+                      className="w-full h-full rounded-lg border border-slate-800 bg-white"
+                    />
+                  ) : (
+                    <div className="text-center space-y-3 p-8">
+                      <FileText className="h-12 w-12 text-slate-600 mx-auto" />
+                      <p className="text-xs text-slate-400">PDF stream ready for download.</p>
+                      <button
+                        onClick={() => handleDownloadPdf(previewingPdf)}
+                        className="px-4 py-2 bg-blue-600 text-white font-bold text-xs rounded-xl"
+                      >
+                        Download PDF to Read
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </section>
       )}
     </div>

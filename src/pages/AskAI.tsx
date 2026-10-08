@@ -30,6 +30,22 @@ interface AskAIProps {
 // Client-side Instant Knowledge Base for GAT Topics
 function getClientGATGuidance(query: string): string {
   const q = query.toLowerCase();
+
+  if (q.includes("who are you") || q.includes("who r u") || q.includes("who created you") || q.includes("what is your name") || q.includes("who made you") || q.includes("introduce") || q.includes("what are you") || q.includes("what is nda ai") || q === "hi" || q === "hello" || q === "jai hind") {
+    return `### 🎖️ Jai Hind, Cadet! I am **NDA AI** — Your Personal UPSC NDA GAT & Defence Studies Mentor.
+
+I am an elite study companion built specifically to help you master the UPSC NDA (National Defence Academy) & NA (Naval Academy) General Ability Test (GAT) examination.
+
+#### 🎯 What I Do:
+1. **Defence & National Current Affairs**: In-depth intelligence on naval ship commissions, missile tests (BrahMos, Agni, Astra), defence budget allocations, and bilateral exercises.
+2. **UPSC GAT Syllabus Synergies**: Direct linkages to Modern Indian History (1857-1947), Indian Polity & Constitution, Physical Geography, and General Science.
+3. **Targeted Practice MCQs**: High-yield 4-option practice questions with full explanations and common trap alerts.
+4. **Hindustan Times Daily Current Affairs**: Access and revise daily current affairs PDF digests.
+5. **Cadet Q&A**: Ask any doubt on Indian Armed Forces commands, ranks, weapons, or study strategy!
+
+**How can I assist your march to Khadakwasla today? Ask me any question or request a mock test!**`;
+  }
+
   if (q.includes("missile") || q.includes("drdo") || q.includes("weapon") || q.includes("brahmos") || q.includes("agni")) {
     return `### 🛡️ GAT Defense Capsule: Indian Missile Systems & DRDO Arsenal
 - **Agni Series**: Surface-to-Surface Ballistic Missiles (Agni-V with MIRV technology, ~5,000+ km range under *Mission Divyastra*).
