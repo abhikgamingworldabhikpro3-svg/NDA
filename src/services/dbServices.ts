@@ -722,6 +722,8 @@ export const dailyPdfService = {
         fileName: savedPdf.fileName,
         fileSize: savedPdf.fileSize,
         date: savedPdf.date,
+        storageProvider: savedPdf.storageProvider || 'edge-server',
+        cdnUrl: savedPdf.cdnUrl || '',
         downloadUrl: savedPdf.downloadUrl || `/api/pdf/download/${savedPdf.id}`,
         viewUrl: savedPdf.viewUrl || `/api/pdf/view/${savedPdf.id}`,
         notes: savedPdf.notes || '',

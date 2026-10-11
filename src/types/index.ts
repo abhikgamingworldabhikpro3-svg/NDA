@@ -153,15 +153,32 @@ export interface UserQuery {
   createdAt: string;
 }
 
+export type StorageProviderType = 'edge-server' | 'cloudinary' | 'supabase' | 'google-drive' | 'custom-cdn';
+
 export interface DailyPdf {
   id: string;
   title: string;
   fileName: string;
   fileSize: string;
   date: string;
+  storageProvider?: StorageProviderType;
+  cdnUrl?: string;
   base64Data?: string;
   downloadUrl?: string;
   viewUrl?: string;
   notes?: string;
   createdAt: string;
+}
+
+export interface CdnStorageConfig {
+  activeProvider: 'edge-server' | 'cloudinary' | 'supabase';
+  cloudinary?: {
+    cloudName: string;
+    uploadPreset: string;
+  };
+  supabase?: {
+    projectUrl: string;
+    anonKey: string;
+    bucketName: string;
+  };
 }

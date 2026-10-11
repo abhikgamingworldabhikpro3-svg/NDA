@@ -7,6 +7,7 @@ import { OfflineIndicator } from './components/OfflineIndicator';
 import { ToastContainer, ToastMessage } from './components/Toast';
 
 // Pages
+import ServiceClosure from './pages/ServiceClosure';
 import ServerDown from './pages/ServerDown';
 import UnderConstruction from './pages/UnderConstruction';
 import Launch from './pages/Launch';
@@ -135,34 +136,18 @@ const MainAppContent: React.FC = () => {
     );
   }
 
-  // EXPLICIT SERVER DOWN OUTAGE ROUTE (Optional maintenance mode)
-  if (currentPath === '/server-down') {
+  // Check for developer/staff preview bypass query
+  const isBypassMode = typeof window !== 'undefined' && (
+    window.location.search.includes('preview=true') || 
+    window.location.search.includes('bypass=true') ||
+    sessionStorage.getItem('service_preview_bypass') === 'true'
+  );
+
+  // Default mode: Service is CLOSED due to funding constraints in clean civilian design
+  if (!isBypassMode && !(currentPath === '/admin' || currentPath.startsWith('/admin'))) {
     return (
-      <ServerDown 
-        onRetry={() => navigate('/')}
+      <ServiceClosure 
         onAdminAccess={() => navigate('/admin')}
-        onViewLaunch={() => navigate('/launch')}
-      />
-    );
-  }
-
-  // EXPLICIT LAUNCH NOTIFICATION & APPRECIATION ROUTE
-  if (currentPath === '/launch') {
-    return (
-      <Launch 
-        onBackToCommand={() => navigate('/')} 
-      />
-    );
-  }
-
-  // EXPLICIT UNDER CONSTRUCTION ROUTE
-  if (currentPath === '/under-construction') {
-    return (
-      <UnderConstruction 
-        onLaunchNow={() => navigate('/launch')}
-        darkMode={darkMode} 
-        setDarkMode={setDarkMode} 
-        lang={lang} 
       />
     );
   }

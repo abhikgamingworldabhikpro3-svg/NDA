@@ -208,12 +208,21 @@ async function startServer() {
   // Persistent disk storage directory for uploaded Daily PDFs
   const UPLOAD_DIR = path.join(__dirname, 'uploads', 'daily-pdfs');
   const MANIFEST_FILE = path.join(UPLOAD_DIR, 'manifest.json');
+  const CDN_CONFIG_FILE = path.join(UPLOAD_DIR, 'cdn-config.json');
+
   try {
     if (!fs.existsSync(UPLOAD_DIR)) {
       fs.mkdirSync(UPLOAD_DIR, { recursive: true });
     }
     if (!fs.existsSync(MANIFEST_FILE)) {
       fs.writeFileSync(MANIFEST_FILE, JSON.stringify([]));
+    }
+    if (!fs.existsSync(CDN_CONFIG_FILE)) {
+      fs.writeFileSync(CDN_CONFIG_FILE, JSON.stringify({
+        activeProvider: 'edge-server',
+        cloudinary: { cloudName: '', uploadPreset: '' },
+        supabase: { projectUrl: '', anonKey: '', bucketName: 'daily-pdfs' }
+      }, null, 2));
     }
   } catch (dirErr) {
     console.warn("Storage folder init:", dirErr);
@@ -224,33 +233,92 @@ async function startServer() {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
 
-  // Persistent PDF Upload Endpoint (Saves to server disk - NOT Firebase Storage!)
+  // Get Free CDN Storage Configuration
+  app.get('/api/pdf/cdn-config', (req, res) => {
+    try {
+      if (fs.existsSync(CDN_CONFIG_FILE)) {
+        const config = JSON.parse(fs.readFileSync(CDN_CONFIG_FILE, 'utf-8'));
+        return res.json(config);
+      }
+      res.json({
+        activeProvider: 'edge-server',
+        cloudinary: { cloudName: '', uploadPreset: '' },
+        supabase: { projectUrl: '', anonKey: '', bucketName: 'daily-pdfs' }
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: "Failed to read CDN configuration" });
+    }
+  });
+
+  // Save Free CDN Storage Configuration
+  app.post('/api/pdf/cdn-config', (req, res) => {
+    try {
+      const config = req.body || {};
+      fs.writeFileSync(CDN_CONFIG_FILE, JSON.stringify(config, null, 2));
+      res.json({ success: true, config });
+    } catch (e: any) {
+      res.status(500).json({ error: "Failed to save CDN configuration" });
+    }
+  });
+
+  // Persistent PDF Upload Endpoint (Supports Edge Disk, Cloudinary, Supabase, Google Drive, & Direct CDN URLs)
   app.post('/api/pdf/upload', async (req, res) => {
     try {
-      const { title, fileName, fileSize, date, notes, base64Data } = req.body;
-      if (!fileName || !base64Data) {
-        return res.status(400).json({ error: "Missing required PDF file content" });
+      const { title, fileName, fileSize, date, notes, base64Data, cdnUrl, storageProvider } = req.body;
+      if (!fileName && !cdnUrl) {
+        return res.status(400).json({ error: "Missing required PDF file content or CDN URL" });
       }
 
       const id = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-      const safeFileName = `${id}_${fileName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-      const filePath = path.join(UPLOAD_DIR, safeFileName);
+      let safeFileName = '';
+      let downloadUrl = `/api/pdf/download/${id}`;
+      let viewUrl = `/api/pdf/view/${id}`;
 
-      // Extract raw base64 data and write binary file to disk
-      const cleanBase64 = base64Data.replace(/^data:application\/pdf;base64,/, '');
-      const buffer = Buffer.from(cleanBase64, 'base64');
-      fs.writeFileSync(filePath, buffer);
+      // Normalize if cloud CDN or Google Drive link is provided
+      if (cdnUrl && typeof cdnUrl === 'string') {
+        const trimmedCdn = cdnUrl.trim();
+        const gdriveMatch = trimmedCdn.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmedCdn.match(/id=([a-zA-Z0-9_-]+)/);
+        if (gdriveMatch && gdriveMatch[1]) {
+          const fileId = gdriveMatch[1];
+          viewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+          downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+        } else if (trimmedCdn.includes('res.cloudinary.com')) {
+          viewUrl = trimmedCdn;
+          downloadUrl = trimmedCdn.replace('/upload/', '/upload/fl_attachment/');
+        } else {
+          viewUrl = trimmedCdn;
+          downloadUrl = trimmedCdn;
+        }
+      }
+
+      // If binary base64 is uploaded, persist to local edge storage
+      if (base64Data && typeof base64Data === 'string' && base64Data.length > 50) {
+        const resolvedName = fileName || 'document.pdf';
+        safeFileName = `${id}_${resolvedName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+        const filePath = path.join(UPLOAD_DIR, safeFileName);
+        const cleanBase64 = base64Data.replace(/^data:application\/pdf;base64,/, '');
+        const buffer = Buffer.from(cleanBase64, 'base64');
+        fs.writeFileSync(filePath, buffer);
+      }
+
+      const resolvedProvider = storageProvider || 
+        (cdnUrl?.includes('drive.google.com') ? 'google-drive' : 
+         cdnUrl?.includes('cloudinary.com') ? 'cloudinary' : 
+         cdnUrl?.includes('supabase.co') ? 'supabase' : 
+         (cdnUrl ? 'custom-cdn' : 'edge-server'));
 
       const newPdfItem = {
         id,
         title: title || 'Hindustan Times GAT Daily Special',
-        fileName,
+        fileName: fileName || (cdnUrl ? 'Cloud_CDN_Document.pdf' : 'document.pdf'),
         safeFileName,
-        fileSize: fileSize || ((buffer.length / (1024 * 1024)).toFixed(2) + ' MB'),
+        fileSize: fileSize || '1.5 MB',
         date: date || new Date().toISOString().split('T')[0],
         notes: notes || '',
-        downloadUrl: `/api/pdf/download/${id}`,
-        viewUrl: `/api/pdf/view/${id}`,
+        storageProvider: resolvedProvider,
+        cdnUrl: cdnUrl || '',
+        downloadUrl,
+        viewUrl,
         createdAt: new Date().toISOString()
       };
 
@@ -266,9 +334,8 @@ async function startServer() {
       currentList.unshift(newPdfItem);
       fs.writeFileSync(MANIFEST_FILE, JSON.stringify(currentList, null, 2));
 
-      console.log(`[DailyPDF] Successfully saved PDF "${fileName}" (${newPdfItem.fileSize}) to persistent disk.`);
-      // Return with base64 data so the client has immediate access
-      res.json({ ...newPdfItem, base64Data });
+      console.log(`[DailyPDF] Successfully registered PDF "${newPdfItem.fileName}" via ${resolvedProvider} (${newPdfItem.fileSize}).`);
+      res.json({ ...newPdfItem, base64Data: base64Data || undefined });
     } catch (err: any) {
       console.error("PDF Upload Error:", err);
       res.status(500).json({ error: err.message || "Failed to persist PDF file" });

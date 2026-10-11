@@ -11,7 +11,8 @@ import {
 } from '../services/dbServices';
 import { seedSampleFirestoreData } from '../data/seedData';
 import { indexedDbPdf } from '../services/indexedDbPdf';
-import { CurrentAffair, Question, QuestionReport, AuditLog, UserQuery, DailyPdf } from '../types';
+import { CurrentAffair, Question, QuestionReport, AuditLog, UserQuery, DailyPdf, CdnStorageConfig, StorageProviderType } from '../types';
+import { cdnStorageService } from '../services/cdnStorageService';
 import { 
   Lock, 
   Unlock,
@@ -45,7 +46,14 @@ import {
   FileDown,
   ExternalLink,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Cloud,
+  UploadCloud,
+  Link as LinkIcon,
+  Settings,
+  Globe,
+  Server,
+  HardDrive
 } from 'lucide-react';
 
 interface AdminProps {
@@ -108,6 +116,21 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
   const [previewingPdf, setPreviewingPdf] = useState<DailyPdf | null>(null);
   const [deletingPdfId, setDeletingPdfId] = useState<string | null>(null);
 
+  // Free Cloud CDN & PDF Storage States
+  const [pdfUploadSubTab, setPdfUploadSubTab] = useState<'upload' | 'cdn-link' | 'cdn-settings'>('upload');
+  const [cdnUrlInput, setCdnUrlInput] = useState('');
+  const [cdnLinkTitle, setCdnLinkTitle] = useState('');
+  const [cdnLinkDate, setCdnLinkDate] = useState(new Date().toISOString().split('T')[0]);
+  const [cdnLinkNotes, setCdnLinkNotes] = useState('');
+  const [cdnDetectedProvider, setCdnDetectedProvider] = useState<StorageProviderType>('custom-cdn');
+  const [cdnConfig, setCdnConfig] = useState<CdnStorageConfig>({
+    activeProvider: 'edge-server',
+    cloudinary: { cloudName: '', uploadPreset: '' },
+    supabase: { projectUrl: '', anonKey: '', bucketName: 'daily-pdfs' }
+  });
+  const [isSavingCdnConfig, setIsSavingCdnConfig] = useState(false);
+  const [isLinkingCdn, setIsLinkingCdn] = useState(false);
+
   // Edited Article result state (Ready for edits and publication)
   const [aiResult, setAiResult] = useState<Partial<CurrentAffair> | null>(null);
   const [publishing, setPublishing] = useState(false);
@@ -115,13 +138,14 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
   const fetchAdminData = async () => {
     setLoading(true);
     try {
-      const [pubArticles, allQuestions, allReports, allLogs, allQueries, allPdfs] = await Promise.all([
+      const [pubArticles, allQuestions, allReports, allLogs, allQueries, allPdfs, loadedCdnConfig] = await Promise.all([
         articleService.getPublishedArticles(),
         questionService.getAllQuestions(),
         reportService.getAllReports(),
         auditService.getAuditLogs(),
         userQueryService.getUserQueries(),
-        dailyPdfService.getDailyPdfs()
+        dailyPdfService.getDailyPdfs(),
+        cdnStorageService.getConfig()
       ]);
       setArticles(pubArticles || []);
       setQuestions(allQuestions || []);
@@ -129,6 +153,7 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
       setAuditLogs(allLogs || []);
       setUserQueries(allQueries || []);
       setDailyPdfs(allPdfs || []);
+      if (loadedCdnConfig) setCdnConfig(loadedCdnConfig);
     } catch (err) {
       console.error("Admin loader error:", err);
     } finally {
@@ -174,7 +199,7 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
     } catch {}
   };
 
-  // Upload Hindustan Times daily PDF without saving in firebase storage
+  // Upload Hindustan Times daily PDF (Supports Cloudinary Free, Supabase Free, and Edge Storage)
   const handlePdfUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!pdfFile) {
@@ -183,6 +208,81 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
     }
     setIsUploadingPdf(true);
     setPdfStatus(null);
+
+    // 1. Cloudinary Free Plan Upload (if active)
+    if (cdnConfig.activeProvider === 'cloudinary' && cdnConfig.cloudinary?.cloudName && cdnConfig.cloudinary?.uploadPreset) {
+      try {
+        const { cdnUrl, fileSize } = await cdnStorageService.uploadToCloudinary(
+          pdfFile,
+          cdnConfig.cloudinary.cloudName,
+          cdnConfig.cloudinary.uploadPreset
+        );
+        const newPdf = await dailyPdfService.uploadDailyPdf({
+          title: pdfTitle.trim() || 'Hindustan Times GAT Daily Special',
+          fileName: pdfFile.name,
+          fileSize,
+          date: pdfDate,
+          cdnUrl,
+          storageProvider: 'cloudinary',
+          notes: pdfNotes.trim()
+        });
+        setDailyPdfs(prev => [newPdf, ...prev.filter(p => p.id !== newPdf.id)]);
+        setPdfStatus({ 
+          type: 'success', 
+          message: `"${newPdf.title}" uploaded directly to Cloudinary Free Global CDN! Accessible worldwide with 0 server load.` 
+        });
+        setPdfTitle('');
+        setPdfFile(null);
+        setPdfNotes('');
+        const fileInput = document.getElementById('ht-pdf-file-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        setIsUploadingPdf(false);
+        return;
+      } catch (cldErr: any) {
+        console.warn("Cloudinary upload failed, falling back to edge server storage:", cldErr);
+        setPdfStatus({
+          type: 'error',
+          message: `Cloudinary upload notice: ${cldErr.message}. Attempting fallback to Edge Storage...`
+        });
+      }
+    }
+
+    // 2. Supabase Free Storage Upload (if active)
+    if (cdnConfig.activeProvider === 'supabase' && cdnConfig.supabase?.projectUrl && cdnConfig.supabase?.anonKey) {
+      try {
+        const { cdnUrl, fileSize } = await cdnStorageService.uploadToSupabase(
+          pdfFile,
+          cdnConfig.supabase.projectUrl,
+          cdnConfig.supabase.anonKey,
+          cdnConfig.supabase.bucketName || 'daily-pdfs'
+        );
+        const newPdf = await dailyPdfService.uploadDailyPdf({
+          title: pdfTitle.trim() || 'Hindustan Times GAT Daily Special',
+          fileName: pdfFile.name,
+          fileSize,
+          date: pdfDate,
+          cdnUrl,
+          storageProvider: 'supabase',
+          notes: pdfNotes.trim()
+        });
+        setDailyPdfs(prev => [newPdf, ...prev.filter(p => p.id !== newPdf.id)]);
+        setPdfStatus({ 
+          type: 'success', 
+          message: `"${newPdf.title}" uploaded directly to Supabase Free Object Storage!` 
+        });
+        setPdfTitle('');
+        setPdfFile(null);
+        setPdfNotes('');
+        const fileInput = document.getElementById('ht-pdf-file-input') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+        setIsUploadingPdf(false);
+        return;
+      } catch (supaErr: any) {
+        console.warn("Supabase upload failed, falling back to edge server storage:", supaErr);
+      }
+    }
+
+    // 3. Built-in Edge Cloud Storage (Default, 100% Free, Zero Setup)
     try {
       const reader = new FileReader();
       reader.onload = async () => {
@@ -194,12 +294,13 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
             fileSize: (pdfFile.size / (1024 * 1024)).toFixed(2) + ' MB',
             date: pdfDate,
             base64Data: base64,
+            storageProvider: 'edge-server',
             notes: pdfNotes.trim()
           });
           setDailyPdfs(prev => [newPdf, ...prev.filter(p => p.id !== newPdf.id)]);
           setPdfStatus({ 
             type: 'success', 
-            message: `"${newPdf.title}" uploaded & saved permanently! Persisted to Server Disk & Storage — file will remain saved after refresh.` 
+            message: `"${newPdf.title}" saved to Edge Persistent Storage & Browser IndexedDB! Survives all page reloads with 0 Firebase Storage used.` 
           });
           setPdfTitle('');
           setPdfFile(null);
@@ -222,6 +323,65 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
       console.error(err);
       setPdfStatus({ type: 'error', message: err.message || "Failed to process PDF file." });
       setIsUploadingPdf(false);
+    }
+  };
+
+  // Link any Cloud Storage or CDN URL (Google Drive, Cloudflare R2, Cloudinary, etc.)
+  const handleCdnUrlLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!cdnUrlInput.trim()) {
+      setPdfStatus({ type: 'error', message: "Please provide a valid Cloud Storage or CDN URL." });
+      return;
+    }
+    setIsLinkingCdn(true);
+    setPdfStatus(null);
+    try {
+      const { viewUrl, downloadUrl, detectedProvider } = cdnStorageService.normalizeUrl(cdnUrlInput.trim());
+      const fileNameGuess = cdnUrlInput.split('/').pop()?.split('?')[0] || 'Cloud_Document.pdf';
+      const cleanFileName = fileNameGuess.toLowerCase().endsWith('.pdf') ? fileNameGuess : `${fileNameGuess}.pdf`;
+
+      const newPdf = await dailyPdfService.uploadDailyPdf({
+        title: cdnLinkTitle.trim() || 'Hindustan Times GAT Daily Special',
+        fileName: cleanFileName,
+        fileSize: 'Cloud CDN Stream',
+        date: cdnLinkDate,
+        cdnUrl: cdnUrlInput.trim(),
+        downloadUrl,
+        viewUrl,
+        storageProvider: detectedProvider,
+        notes: cdnLinkNotes.trim()
+      });
+
+      setDailyPdfs(prev => [newPdf, ...prev.filter(p => p.id !== newPdf.id)]);
+      setPdfStatus({
+        type: 'success',
+        message: `Successfully linked and published Daily PDF from ${detectedProvider.toUpperCase()} (${newPdf.title})!`
+      });
+      setCdnUrlInput('');
+      setCdnLinkTitle('');
+      setCdnLinkNotes('');
+    } catch (err: any) {
+      console.error(err);
+      setPdfStatus({ type: 'error', message: err.message || "Failed to link Cloud CDN URL." });
+    } finally {
+      setIsLinkingCdn(false);
+    }
+  };
+
+  // Save Free Cloud CDN Configuration
+  const handleSaveCdnConfig = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSavingCdnConfig(true);
+    try {
+      await cdnStorageService.saveConfig(cdnConfig);
+      setPdfStatus({
+        type: 'success',
+        message: `Free Cloud CDN Provider settings saved! Active Provider: ${cdnConfig.activeProvider.toUpperCase()}.`
+      });
+    } catch (e: any) {
+      setPdfStatus({ type: 'error', message: "Failed to save CDN settings." });
+    } finally {
+      setIsSavingCdnConfig(false);
     }
   };
 
@@ -860,130 +1020,507 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
             </div>
           )}
 
-          <div className="bg-[#111c13] border border-[#233827] rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg">
+          <div className="bg-[#111c13] border border-[#233827] rounded-2xl p-5 sm:p-6 space-y-5 shadow-lg">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#233827] pb-4">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-blue-950/60 rounded-xl border border-blue-500/30 text-blue-400">
-                  <FileText className="h-5 w-5" />
+                  <Cloud className="h-5 w-5" />
                 </div>
                 <div>
                   <h3 className="text-sm font-extrabold text-white uppercase tracking-wider flex items-center gap-2">
                     <span>Hindustan Times Daily Current Affairs PDF Console</span>
-                    <span className="text-[10px] bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded font-mono font-bold border border-emerald-600/30">
-                      PERSISTENT STORAGE
+                    <span className="text-[10px] bg-blue-950 text-blue-300 px-2 py-0.5 rounded font-mono font-bold border border-blue-600/30">
+                      FREE CLOUD CDN
                     </span>
                   </h3>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Upload daily HT current affairs PDFs. Persisted directly on Server Disk & Browser IndexedDB — <strong className="text-amber-400">Zero Firebase Storage used</strong> & <strong className="text-emerald-400">retains files after refresh</strong>.
+                    Upload & host daily HT current affairs PDFs via Free Cloud Storage (Edge Server, Cloudinary 25 GB Free, Supabase 1 GB Free, or Google Drive 15 GB Free).
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-[10px] font-mono font-bold text-slate-300 bg-[#09100a] px-2.5 py-1 rounded-lg border border-[#233827]">
-                  {dailyPdfs.length} PDFs Active
-                </span>
+              {/* Sub-tab Pill Switcher */}
+              <div className="flex items-center gap-1.5 bg-[#09100a] p-1 rounded-xl border border-[#233827]">
+                <button
+                  type="button"
+                  onClick={() => setPdfUploadSubTab('upload')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    pdfUploadSubTab === 'upload' 
+                      ? 'bg-blue-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <UploadCloud className="h-3.5 w-3.5" />
+                  <span>Upload File</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPdfUploadSubTab('cdn-link')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    pdfUploadSubTab === 'cdn-link' 
+                      ? 'bg-blue-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <LinkIcon className="h-3.5 w-3.5" />
+                  <span>Link Cloud / CDN URL</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPdfUploadSubTab('cdn-settings')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    pdfUploadSubTab === 'cdn-settings' 
+                      ? 'bg-amber-600 text-white shadow-sm' 
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  <span>CDN Free Plan Setup</span>
+                </button>
               </div>
             </div>
 
-            <form onSubmit={handlePdfUpload} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Document Title *
-                  </label>
-                  <input 
-                    type="text"
-                    required
-                    value={pdfTitle}
-                    onChange={(e) => setPdfTitle(e.target.value)}
-                    placeholder="e.g. Hindustan Times - 7 October 2026"
-                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/40"
-                  />
+            {/* TAB 1: UPLOAD FILE DIRECTLY */}
+            {pdfUploadSubTab === 'upload' && (
+              <form onSubmit={handlePdfUpload} className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-[#0a140d] border border-[#1e3823] text-xs">
+                  <div className="flex items-center gap-2">
+                    <Server className="h-4 w-4 text-emerald-400" />
+                    <span className="text-slate-300 font-bold">Active Free Upload Destination:</span>
+                    <span className="text-emerald-400 font-mono font-bold uppercase">
+                      {cdnConfig.activeProvider === 'cloudinary' 
+                        ? '☁️ Cloudinary Free CDN (25 GB Plan)' 
+                        : cdnConfig.activeProvider === 'supabase' 
+                        ? '⚡ Supabase Storage (1 GB Free Tier)' 
+                        : '💾 Built-in Edge Cloud Storage (Zero Setup & 100% Free)'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPdfUploadSubTab('cdn-settings')}
+                    className="text-[11px] text-blue-400 hover:underline font-bold"
+                  >
+                    Change Destination →
+                  </button>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Publication Date *
-                  </label>
-                  <input 
-                    type="date"
-                    required
-                    value={pdfDate}
-                    onChange={(e) => setPdfDate(e.target.value)}
-                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Document Title *
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={pdfTitle}
+                        onChange={(e) => setPdfTitle(e.target.value)}
+                        placeholder="e.g. Hindustan Times - 11 October 2026"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/40"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Publication Date *
+                      </label>
+                      <input 
+                        type="date"
+                        required
+                        value={pdfDate}
+                        onChange={(e) => setPdfDate(e.target.value)}
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Choose Hindustan Times PDF Document *
+                      </label>
+                      <input 
+                        id="ht-pdf-file-input"
+                        type="file"
+                        required
+                        accept=".pdf,application/pdf"
+                        onChange={(e) => setPdfFile(e.target.files ? e.target.files[0] : null)}
+                        className="w-full text-xs text-slate-300 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-600 file:text-black hover:file:bg-blue-500 cursor-pointer bg-[#090f0a] border border-[#2a452f] p-1 rounded-xl"
+                      />
+                      {pdfFile && (
+                        <p className="text-[10px] text-blue-400 font-mono mt-1">
+                          Selected: {pdfFile.name} ({(pdfFile.size / (1024 * 1024)).toFixed(2)} MB)
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 flex flex-col justify-between">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Key Highlights & GAT Study Notes (Optional)
+                      </label>
+                      <textarea 
+                        rows={4}
+                        value={pdfNotes}
+                        onChange={(e) => setPdfNotes(e.target.value)}
+                        placeholder="Provide quick GAT bullet points, military developments, or core topics covered in this PDF..."
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs p-3 rounded-xl outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/40"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isUploadingPdf}
+                      className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-98"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isUploadingPdf ? 'animate-spin' : ''}`} />
+                      <span>{isUploadingPdf ? "Uploading & Distributing via CDN..." : "Publish HT PDF Live to Website"}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* TAB 2: LINK DIRECT CLOUD / CDN URL */}
+            {pdfUploadSubTab === 'cdn-link' && (
+              <form onSubmit={handleCdnUrlLink} className="space-y-4">
+                <div className="p-3.5 rounded-xl bg-blue-950/30 border border-blue-500/30 space-y-1.5 text-xs text-blue-200">
+                  <div className="font-bold flex items-center gap-1.5">
+                    <Globe className="h-4 w-4 text-blue-400" />
+                    <span>Free Cloud Storage Linking (Google Drive, Cloudinary, Supabase, Cloudflare R2, Telegram)</span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Host your PDF on your free Google Drive (15 GB free), Cloudinary (25 GB free), or any cloud host, and paste the public link below. Our engine automatically transforms Google Drive links into embedded readers and high-speed direct downloads!
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Choose Hindustan Times PDF Document *
-                  </label>
-                  <input 
-                    id="ht-pdf-file-input"
-                    type="file"
-                    required
-                    accept=".pdf,application/pdf"
-                    onChange={(e) => setPdfFile(e.target.files ? e.target.files[0] : null)}
-                    className="w-full text-xs text-slate-300 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-blue-600 file:text-black hover:file:bg-blue-500 cursor-pointer bg-[#090f0a] border border-[#2a452f] p-1 rounded-xl"
-                  />
-                  {pdfFile && (
-                    <p className="text-[10px] text-blue-400 font-mono mt-1">
-                      Selected: {pdfFile.name} ({(pdfFile.size / (1024 * 1024)).toFixed(2)} MB)
-                    </p>
-                  )}
-                </div>
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Cloud CDN or Google Drive PDF URL *
+                      </label>
+                      <input 
+                        type="url"
+                        required
+                        value={cdnUrlInput}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setCdnUrlInput(val);
+                          if (val) {
+                            const { detectedProvider } = cdnStorageService.normalizeUrl(val);
+                            setCdnDetectedProvider(detectedProvider);
+                          }
+                        }}
+                        placeholder="https://drive.google.com/file/d/... or https://res.cloudinary.com/... or https://.../file.pdf"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400 font-mono"
+                      />
+                      {cdnUrlInput && (
+                        <div className="mt-1 flex items-center gap-1.5 text-[10px] text-emerald-400 font-mono font-bold">
+                          <span>✓ Detected:</span>
+                          <span className="uppercase px-1.5 py-0.2 bg-emerald-950 rounded border border-emerald-600/30">
+                            {cdnDetectedProvider}
+                          </span>
+                        </div>
+                      )}
+                    </div>
 
-              <div className="space-y-3 flex flex-col justify-between">
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
-                    Key Highlights & GAT Study Notes (Optional)
-                  </label>
-                  <textarea 
-                    rows={4}
-                    value={pdfNotes}
-                    onChange={(e) => setPdfNotes(e.target.value)}
-                    placeholder="Provide quick GAT bullet points, military developments, or core topics covered in this PDF..."
-                    className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs p-3 rounded-xl outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-400/40"
-                  />
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Document Title *
+                      </label>
+                      <input 
+                        type="text"
+                        required
+                        value={cdnLinkTitle}
+                        onChange={(e) => setCdnLinkTitle(e.target.value)}
+                        placeholder="e.g. Hindustan Times - 11 October 2026 (Cloud Edition)"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Publication Date *
+                      </label>
+                      <input 
+                        type="date"
+                        required
+                        value={cdnLinkDate}
+                        onChange={(e) => setCdnLinkDate(e.target.value)}
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2.5 px-3 rounded-xl outline-none focus:border-blue-400"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 flex flex-col justify-between">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-1">
+                        Key Highlights & GAT Study Notes (Optional)
+                      </label>
+                      <textarea 
+                        rows={4}
+                        value={cdnLinkNotes}
+                        onChange={(e) => setCdnLinkNotes(e.target.value)}
+                        placeholder="Provide notes or syllabus coverage..."
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs p-3 rounded-xl outline-none focus:border-blue-400"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={isLinkingCdn}
+                      className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isLinkingCdn ? 'animate-spin' : ''}`} />
+                      <span>{isLinkingCdn ? "Verifying & Linking CDN..." : "Link & Publish to Live Website"}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* TAB 3: FREE CDN CLOUD PROVIDERS SETUP */}
+            {pdfUploadSubTab === 'cdn-settings' && (
+              <form onSubmit={handleSaveCdnConfig} className="space-y-5">
+                <div className="border-b border-[#233827] pb-3">
+                  <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-2">
+                    <Settings className="h-4 w-4 text-amber-400" />
+                    <span>Free Cloud Storage & CDN Provider Integration</span>
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Select which free cloud storage provider handles file uploads, or configure optional third-party free plans.
+                  </p>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isUploadingPdf}
-                  className="w-full py-2.5 bg-blue-500 hover:bg-blue-400 disabled:opacity-50 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-98"
-                >
-                  <RefreshCw className={`h-4 w-4 ${isUploadingPdf ? 'animate-spin' : ''}`} />
-                  <span>{isUploadingPdf ? "Saving to Persistent Storage..." : "Publish HT PDF Live"}</span>
-                </button>
-              </div>
-            </form>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Provider 1: Built-in Edge Cloud */}
+                  <div 
+                    onClick={() => setCdnConfig(prev => ({ ...prev, activeProvider: 'edge-server' }))}
+                    className={`p-4 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-3 ${
+                      cdnConfig.activeProvider === 'edge-server'
+                        ? 'bg-[#15291a] border-emerald-500 text-white shadow-md'
+                        : 'bg-[#09100a] border-[#233827] text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-extrabold text-xs text-emerald-400 uppercase">Built-in Edge Cloud</span>
+                        <span className="text-[9px] bg-emerald-950 text-emerald-300 font-mono px-1.5 py-0.5 rounded border border-emerald-600/30">100% FREE</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Default high-performance edge storage with IndexedDB client caching. Requires 0 configuration and 0 third-party accounts.
+                      </p>
+                    </div>
+                    <div className="text-[10px] font-bold text-emerald-400">
+                      {cdnConfig.activeProvider === 'edge-server' ? '✓ Currently Active' : 'Click to Activate'}
+                    </div>
+                  </div>
+
+                  {/* Provider 2: Cloudinary Free Plan */}
+                  <div 
+                    onClick={() => setCdnConfig(prev => ({ ...prev, activeProvider: 'cloudinary' }))}
+                    className={`p-4 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-3 ${
+                      cdnConfig.activeProvider === 'cloudinary'
+                        ? 'bg-[#102035] border-blue-500 text-white shadow-md'
+                        : 'bg-[#09100a] border-[#233827] text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-extrabold text-xs text-blue-400 uppercase">Cloudinary Free Plan</span>
+                        <span className="text-[9px] bg-blue-950 text-blue-300 font-mono px-1.5 py-0.5 rounded border border-blue-600/30">25 GB FREE</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Generous 25 GB free cloud tier with lightning-fast worldwide CDN distribution and SSL streaming.
+                      </p>
+                    </div>
+                    <div className="text-[10px] font-bold text-blue-400">
+                      {cdnConfig.activeProvider === 'cloudinary' ? '✓ Currently Active' : 'Click to Activate'}
+                    </div>
+                  </div>
+
+                  {/* Provider 3: Supabase Storage Free Tier */}
+                  <div 
+                    onClick={() => setCdnConfig(prev => ({ ...prev, activeProvider: 'supabase' }))}
+                    className={`p-4 rounded-xl border cursor-pointer transition flex flex-col justify-between gap-3 ${
+                      cdnConfig.activeProvider === 'supabase'
+                        ? 'bg-[#102a24] border-teal-500 text-white shadow-md'
+                        : 'bg-[#09100a] border-[#233827] text-slate-400 hover:border-slate-600'
+                    }`}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="font-extrabold text-xs text-teal-400 uppercase">Supabase Storage</span>
+                        <span className="text-[9px] bg-teal-950 text-teal-300 font-mono px-1.5 py-0.5 rounded border border-teal-600/30">1 GB FREE</span>
+                      </div>
+                      <p className="text-[11px] text-slate-300 leading-relaxed">
+                        Open-source object storage with public bucket URLs. Generous free tier for educational portals.
+                      </p>
+                    </div>
+                    <div className="text-[10px] font-bold text-teal-400">
+                      {cdnConfig.activeProvider === 'supabase' ? '✓ Currently Active' : 'Click to Activate'}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Cloudinary Configuration Fields */}
+                <div className="p-4 rounded-xl bg-[#0a120c] border border-[#1e3322] space-y-3">
+                  <h5 className="text-xs font-bold text-blue-400 uppercase flex items-center gap-1.5">
+                    <Cloud className="h-4 w-4" />
+                    <span>Cloudinary Free Tier Credentials (Optional)</span>
+                  </h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">
+                        Cloudinary Cloud Name
+                      </label>
+                      <input 
+                        type="text"
+                        value={cdnConfig.cloudinary?.cloudName || ''}
+                        onChange={(e) => setCdnConfig(prev => ({
+                          ...prev,
+                          cloudinary: { ...prev.cloudinary, cloudName: e.target.value, uploadPreset: prev.cloudinary?.uploadPreset || '' }
+                        }))}
+                        placeholder="e.g. nda-academy"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2 px-3 rounded-lg outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">
+                        Unsigned Upload Preset
+                      </label>
+                      <input 
+                        type="text"
+                        value={cdnConfig.cloudinary?.uploadPreset || ''}
+                        onChange={(e) => setCdnConfig(prev => ({
+                          ...prev,
+                          cloudinary: { ...prev.cloudinary, uploadPreset: e.target.value, cloudName: prev.cloudinary?.cloudName || '' }
+                        }))}
+                        placeholder="e.g. daily_affairs_preset"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2 px-3 rounded-lg outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-[10px] text-slate-400 italic">
+                    How to get for free: Sign up at cloudinary.com (No CC needed) &gt; Go to Settings &gt; Upload &gt; Add Upload Preset &gt; Set Mode to "Unsigned".
+                  </p>
+                </div>
+
+                {/* Supabase Configuration Fields */}
+                <div className="p-4 rounded-xl bg-[#0a120c] border border-[#1e3322] space-y-3">
+                  <h5 className="text-xs font-bold text-teal-400 uppercase flex items-center gap-1.5">
+                    <HardDrive className="h-4 w-4" />
+                    <span>Supabase Storage Free Tier Credentials (Optional)</span>
+                  </h5>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">
+                        Project URL
+                      </label>
+                      <input 
+                        type="url"
+                        value={cdnConfig.supabase?.projectUrl || ''}
+                        onChange={(e) => setCdnConfig(prev => ({
+                          ...prev,
+                          supabase: { ...prev.supabase, projectUrl: e.target.value, anonKey: prev.supabase?.anonKey || '', bucketName: prev.supabase?.bucketName || 'daily-pdfs' }
+                        }))}
+                        placeholder="https://xyz.supabase.co"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2 px-3 rounded-lg outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">
+                        Public Anon Key
+                      </label>
+                      <input 
+                        type="password"
+                        value={cdnConfig.supabase?.anonKey || ''}
+                        onChange={(e) => setCdnConfig(prev => ({
+                          ...prev,
+                          supabase: { ...prev.supabase, anonKey: e.target.value, projectUrl: prev.supabase?.projectUrl || '', bucketName: prev.supabase?.bucketName || 'daily-pdfs' }
+                        }))}
+                        placeholder="eyJhbGciOi..."
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2 px-3 rounded-lg outline-none font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-300 uppercase mb-1">
+                        Public Bucket Name
+                      </label>
+                      <input 
+                        type="text"
+                        value={cdnConfig.supabase?.bucketName || 'daily-pdfs'}
+                        onChange={(e) => setCdnConfig(prev => ({
+                          ...prev,
+                          supabase: { ...prev.supabase, bucketName: e.target.value, projectUrl: prev.supabase?.projectUrl || '', anonKey: prev.supabase?.anonKey || '' }
+                        }))}
+                        placeholder="daily-pdfs"
+                        className="w-full bg-[#090f0a] border border-[#2a452f] text-slate-100 text-xs py-2 px-3 rounded-lg outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={isSavingCdnConfig}
+                    className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs uppercase tracking-wider rounded-xl transition cursor-pointer shadow-md"
+                  >
+                    {isSavingCdnConfig ? "Saving CDN Config..." : "Save Free CDN Settings"}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
+          {/* Published PDFs Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider">
                 Published Hindustan Times Daily PDFs ({dailyPdfs.length})
               </h4>
               <span className="text-[10px] text-slate-500 font-mono">
-                Persisted & Synced across sessions
+                Real-time CDN Distribution & Cloud Sync
               </span>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {dailyPdfs.length === 0 ? (
                 <div className="col-span-2 p-8 text-center text-slate-500 text-xs bg-[#111c13] border border-[#233827] rounded-2xl">
-                  No Daily PDFs published yet. Upload your first edition above!
+                  No Daily PDFs published yet. Upload or link your first edition above!
                 </div>
               ) : (
                 dailyPdfs.map((pdf) => (
                   <div key={pdf.id} className="bg-[#111c13] border border-[#233827] hover:border-blue-500/30 p-4.5 rounded-2xl flex flex-col justify-between gap-3 shadow-md relative overflow-hidden transition">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono text-blue-400 bg-blue-950 px-2.5 py-0.5 rounded border border-blue-500/20 font-bold">
-                          📅 {pdf.date}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[10px] font-mono text-blue-400 bg-blue-950 px-2.5 py-0.5 rounded border border-blue-500/20 font-bold">
+                            📅 {pdf.date}
+                          </span>
+                          {/* Cloud Storage Provider Badge */}
+                          <span className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${
+                            pdf.storageProvider === 'cloudinary'
+                              ? 'bg-blue-950/80 text-blue-300 border-blue-500/30'
+                              : pdf.storageProvider === 'google-drive'
+                              ? 'bg-amber-950/80 text-amber-300 border-amber-500/30'
+                              : pdf.storageProvider === 'supabase'
+                              ? 'bg-teal-950/80 text-teal-300 border-teal-500/30'
+                              : pdf.storageProvider === 'custom-cdn'
+                              ? 'bg-purple-950/80 text-purple-300 border-purple-500/30'
+                              : 'bg-emerald-950/80 text-emerald-300 border-emerald-500/30'
+                          }`}>
+                            {pdf.storageProvider === 'cloudinary' ? '☁️ Cloudinary' :
+                             pdf.storageProvider === 'google-drive' ? '📁 Google Drive' :
+                             pdf.storageProvider === 'supabase' ? '⚡ Supabase' :
+                             pdf.storageProvider === 'custom-cdn' ? '🌐 Cloud CDN' :
+                             '💾 Edge Cloud'}
+                          </span>
+                        </div>
+
                         <span className="text-[10px] text-slate-400 font-mono font-bold">
                           📦 {pdf.fileSize}
                         </span>
@@ -1021,6 +1558,18 @@ export const Admin: React.FC<AdminProps> = ({ onBack, initialTab }) => {
                         <FileDown className="h-3.5 w-3.5" />
                         <span>Download</span>
                       </button>
+
+                      {pdf.cdnUrl && (
+                        <a
+                          href={pdf.cdnUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 text-blue-400 hover:text-white rounded-lg bg-blue-950/30 hover:bg-blue-900/50 border border-blue-500/20 transition cursor-pointer"
+                          title="Open direct Cloud CDN source URL"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
 
                       <button
                         onClick={() => setDeletingPdfId(pdf.id)}
