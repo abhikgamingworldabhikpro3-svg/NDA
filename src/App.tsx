@@ -116,41 +116,8 @@ const MainAppContent: React.FC = () => {
     return param;
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#080d09] text-slate-100 flex flex-col justify-center items-center space-y-4 font-sans">
-        <RefreshCw className="h-8 w-8 text-amber-500 animate-spin" />
-        <p className="text-xs font-bold text-slate-400">Verifying secure student identity, establishing connection...</p>
-      </div>
-    );
-  }
-
-  // EXPLICIT ADMIN SECTION ROUTE (Guarded by Secret Code / Clearance Gate)
-  if (currentPath === '/admin' || currentPath.startsWith('/admin')) {
-    const isDailyPdf = currentPath.includes('daily-pdf') || window.location.search.includes('daily-pdf');
-    return (
-      <Admin 
-        onBack={() => navigate('/')} 
-        initialTab={isDailyPdf ? 'daily-pdf' : undefined}
-      />
-    );
-  }
-
-  // Check for developer/staff preview bypass query
-  const isBypassMode = typeof window !== 'undefined' && (
-    window.location.search.includes('preview=true') || 
-    window.location.search.includes('bypass=true') ||
-    sessionStorage.getItem('service_preview_bypass') === 'true'
-  );
-
-  // Default mode: Service is CLOSED due to funding constraints in clean civilian design
-  if (!isBypassMode && !(currentPath === '/admin' || currentPath.startsWith('/admin'))) {
-    return (
-      <ServiceClosure 
-        onAdminAccess={() => navigate('/admin')}
-      />
-    );
-  }
+  // All services are permanently closed, all files deleted, and no admin can enter
+  return <ServiceClosure />;
 
   // PUBLIC FLOWS (When preview mode is engaged or user explicitly visits login/register)
   if (!currentUser) {

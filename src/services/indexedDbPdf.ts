@@ -85,5 +85,22 @@ export const indexedDbPdf = {
     } catch (e) {
       console.warn('IndexedDB deletePdf note:', e);
     }
+  },
+
+  async purgeAllData(): Promise<void> {
+    try {
+      if (typeof window !== 'undefined' && window.indexedDB) {
+        window.indexedDB.deleteDatabase(DB_NAME);
+      }
+      try {
+        localStorage.removeItem('nda_daily_pdfs');
+        localStorage.removeItem('nda_user_queries');
+        localStorage.removeItem('nda_offline_queries');
+        localStorage.removeItem('nda_bookmarks');
+        sessionStorage.clear();
+      } catch {}
+    } catch (e) {
+      console.warn('Purge note:', e);
+    }
   }
 };

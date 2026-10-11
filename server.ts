@@ -205,257 +205,49 @@ async function startServer() {
   app.use(express.json({ limit: '100mb' }));
   app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 
-  // Persistent disk storage directory for uploaded Daily PDFs
+  // Persistent disk storage directory - permanently cleared
   const UPLOAD_DIR = path.join(__dirname, 'uploads', 'daily-pdfs');
-  const MANIFEST_FILE = path.join(UPLOAD_DIR, 'manifest.json');
-  const CDN_CONFIG_FILE = path.join(UPLOAD_DIR, 'cdn-config.json');
-
   try {
-    if (!fs.existsSync(UPLOAD_DIR)) {
-      fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(MANIFEST_FILE)) {
-      fs.writeFileSync(MANIFEST_FILE, JSON.stringify([]));
-    }
-    if (!fs.existsSync(CDN_CONFIG_FILE)) {
-      fs.writeFileSync(CDN_CONFIG_FILE, JSON.stringify({
-        activeProvider: 'edge-server',
-        cloudinary: { cloudName: '', uploadPreset: '' },
-        supabase: { projectUrl: '', anonKey: '', bucketName: 'daily-pdfs' }
-      }, null, 2));
+    if (fs.existsSync(UPLOAD_DIR)) {
+      fs.rmSync(UPLOAD_DIR, { recursive: true, force: true });
     }
   } catch (dirErr) {
-    console.warn("Storage folder init:", dirErr);
+    console.warn("Storage folder cleanup note:", dirErr);
   }
 
-  // Health check endpoint
+  // Health check endpoint - reports terminated
   app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.json({ status: 'terminated', service: 'closed', timestamp: new Date().toISOString() });
   });
 
-  // Get Free CDN Storage Configuration
-  app.get('/api/pdf/cdn-config', (req, res) => {
-    try {
-      if (fs.existsSync(CDN_CONFIG_FILE)) {
-        const config = JSON.parse(fs.readFileSync(CDN_CONFIG_FILE, 'utf-8'));
-        return res.json(config);
-      }
-      res.json({
-        activeProvider: 'edge-server',
-        cloudinary: { cloudName: '', uploadPreset: '' },
-        supabase: { projectUrl: '', anonKey: '', bucketName: 'daily-pdfs' }
-      });
-    } catch (e: any) {
-      res.status(500).json({ error: "Failed to read CDN configuration" });
-    }
-  });
-
-  // Save Free CDN Storage Configuration
-  app.post('/api/pdf/cdn-config', (req, res) => {
-    try {
-      const config = req.body || {};
-      fs.writeFileSync(CDN_CONFIG_FILE, JSON.stringify(config, null, 2));
-      res.json({ success: true, config });
-    } catch (e: any) {
-      res.status(500).json({ error: "Failed to save CDN configuration" });
-    }
-  });
-
-  // Persistent PDF Upload Endpoint (Supports Edge Disk, Cloudinary, Supabase, Google Drive, & Direct CDN URLs)
+  // PDF Upload Endpoint - Permanently Closed
   app.post('/api/pdf/upload', async (req, res) => {
-    try {
-      const { title, fileName, fileSize, date, notes, base64Data, cdnUrl, storageProvider } = req.body;
-      if (!fileName && !cdnUrl) {
-        return res.status(400).json({ error: "Missing required PDF file content or CDN URL" });
-      }
-
-      const id = 'pdf_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
-      let safeFileName = '';
-      let downloadUrl = `/api/pdf/download/${id}`;
-      let viewUrl = `/api/pdf/view/${id}`;
-
-      // Normalize if cloud CDN or Google Drive link is provided
-      if (cdnUrl && typeof cdnUrl === 'string') {
-        const trimmedCdn = cdnUrl.trim();
-        const gdriveMatch = trimmedCdn.match(/\/file\/d\/([a-zA-Z0-9_-]+)/) || trimmedCdn.match(/id=([a-zA-Z0-9_-]+)/);
-        if (gdriveMatch && gdriveMatch[1]) {
-          const fileId = gdriveMatch[1];
-          viewUrl = `https://drive.google.com/file/d/${fileId}/preview`;
-          downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-        } else if (trimmedCdn.includes('res.cloudinary.com')) {
-          viewUrl = trimmedCdn;
-          downloadUrl = trimmedCdn.replace('/upload/', '/upload/fl_attachment/');
-        } else {
-          viewUrl = trimmedCdn;
-          downloadUrl = trimmedCdn;
-        }
-      }
-
-      // If binary base64 is uploaded, persist to local edge storage
-      if (base64Data && typeof base64Data === 'string' && base64Data.length > 50) {
-        const resolvedName = fileName || 'document.pdf';
-        safeFileName = `${id}_${resolvedName.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
-        const filePath = path.join(UPLOAD_DIR, safeFileName);
-        const cleanBase64 = base64Data.replace(/^data:application\/pdf;base64,/, '');
-        const buffer = Buffer.from(cleanBase64, 'base64');
-        fs.writeFileSync(filePath, buffer);
-      }
-
-      const resolvedProvider = storageProvider || 
-        (cdnUrl?.includes('drive.google.com') ? 'google-drive' : 
-         cdnUrl?.includes('cloudinary.com') ? 'cloudinary' : 
-         cdnUrl?.includes('supabase.co') ? 'supabase' : 
-         (cdnUrl ? 'custom-cdn' : 'edge-server'));
-
-      const newPdfItem = {
-        id,
-        title: title || 'Hindustan Times GAT Daily Special',
-        fileName: fileName || (cdnUrl ? 'Cloud_CDN_Document.pdf' : 'document.pdf'),
-        safeFileName,
-        fileSize: fileSize || '1.5 MB',
-        date: date || new Date().toISOString().split('T')[0],
-        notes: notes || '',
-        storageProvider: resolvedProvider,
-        cdnUrl: cdnUrl || '',
-        downloadUrl,
-        viewUrl,
-        createdAt: new Date().toISOString()
-      };
-
-      // Update disk manifest
-      let currentList = [];
-      try {
-        if (fs.existsSync(MANIFEST_FILE)) {
-          currentList = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
-        }
-      } catch (readErr) {
-        currentList = [];
-      }
-      currentList.unshift(newPdfItem);
-      fs.writeFileSync(MANIFEST_FILE, JSON.stringify(currentList, null, 2));
-
-      console.log(`[DailyPDF] Successfully registered PDF "${newPdfItem.fileName}" via ${resolvedProvider} (${newPdfItem.fileSize}).`);
-      res.json({ ...newPdfItem, base64Data: base64Data || undefined });
-    } catch (err: any) {
-      console.error("PDF Upload Error:", err);
-      res.status(500).json({ error: err.message || "Failed to persist PDF file" });
-    }
+    res.status(410).json({ error: "Service permanently closed. All files have been deleted and no new uploads are permitted." });
   });
 
-  // List all uploaded PDFs from disk
+  // List all uploaded PDFs from disk - All files deleted
   app.get('/api/pdf/list', (req, res) => {
-    try {
-      if (fs.existsSync(MANIFEST_FILE)) {
-        const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
-        return res.json(list);
-      }
-      res.json([]);
-    } catch (err: any) {
-      console.error("PDF list error:", err);
-      res.json([]);
-    }
+    res.json([]);
   });
 
-  // Download PDF file as attachment
+  // Download PDF file - Permanently deleted
   app.get('/api/pdf/download/:id', (req, res) => {
-    try {
-      const { id } = req.params;
-      if (!fs.existsSync(MANIFEST_FILE)) {
-        return res.status(404).send("File not found");
-      }
-      const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
-      const item = list.find((p: any) => p.id === id);
-      if (!item) {
-        return res.status(404).send("PDF record not found");
-      }
-      const filePath = path.join(UPLOAD_DIR, item.safeFileName);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).send("PDF binary not found on disk");
-      }
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${item.fileName}"`);
-      fs.createReadStream(filePath).pipe(res);
-    } catch (err: any) {
-      console.error("PDF download error:", err);
-      res.status(500).send("Error streaming PDF");
-    }
+    res.status(410).send("File permanently deleted. Service operations have ended.");
   });
 
-  // View PDF inline in browser tab / iframe
+  // View PDF inline - Permanently deleted
   app.get('/api/pdf/view/:id', (req, res) => {
-    try {
-      const { id } = req.params;
-      if (!fs.existsSync(MANIFEST_FILE)) {
-        return res.status(404).send("File not found");
-      }
-      const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
-      const item = list.find((p: any) => p.id === id);
-      if (!item) {
-        return res.status(404).send("PDF record not found");
-      }
-      const filePath = path.join(UPLOAD_DIR, item.safeFileName);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).send("PDF binary not found on disk");
-      }
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${item.fileName}"`);
-      fs.createReadStream(filePath).pipe(res);
-    } catch (err: any) {
-      console.error("PDF view error:", err);
-      res.status(500).send("Error streaming PDF");
-    }
+    res.status(410).send("File permanently deleted. Service operations have ended.");
   });
 
-  // Retrieve base64 data for a specific PDF
+  // Retrieve base64 data for a specific PDF - Permanently deleted
   app.get('/api/pdf/:id', (req, res) => {
-    try {
-      const { id } = req.params;
-      if (!fs.existsSync(MANIFEST_FILE)) {
-        return res.status(404).json({ error: "File not found" });
-      }
-      const list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
-      const item = list.find((p: any) => p.id === id);
-      if (!item) {
-        return res.status(404).json({ error: "PDF record not found" });
-      }
-      const filePath = path.join(UPLOAD_DIR, item.safeFileName);
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: "PDF binary not found on disk" });
-      }
-
-      const fileBuffer = fs.readFileSync(filePath);
-      const base64Data = `data:application/pdf;base64,${fileBuffer.toString('base64')}`;
-      res.json({ ...item, base64Data });
-    } catch (err: any) {
-      console.error("PDF retrieval error:", err);
-      res.status(500).json({ error: "Error retrieving PDF" });
-    }
+    res.status(410).json({ error: "File permanently deleted. Service operations have ended." });
   });
 
-  // Delete uploaded PDF from disk
+  // Delete uploaded PDF endpoint
   app.delete('/api/pdf/:id', (req, res) => {
-    try {
-      const { id } = req.params;
-      if (!fs.existsSync(MANIFEST_FILE)) {
-        return res.json({ success: true });
-      }
-      let list = JSON.parse(fs.readFileSync(MANIFEST_FILE, 'utf-8'));
-      const item = list.find((p: any) => p.id === id);
-      if (item) {
-        const filePath = path.join(UPLOAD_DIR, item.safeFileName);
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-        list = list.filter((p: any) => p.id !== id);
-        fs.writeFileSync(MANIFEST_FILE, JSON.stringify(list, null, 2));
-      }
-      res.json({ success: true });
-    } catch (err: any) {
-      console.error("PDF deletion error:", err);
-      res.status(500).json({ error: "Failed to delete PDF" });
-    }
+    res.json({ success: true, message: "All files have been deleted" });
   });
 
   // Helper for fast, non-blocking AI calls with strict timeout
